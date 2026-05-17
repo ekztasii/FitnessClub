@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Атлетика — CRM</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+renderLayout('Главная — Дашборд', 'dashboard');
+
+const content = document.getElementById('pageContent');
+content.innerHTML = `
+  <div class="mb-4">
+    <h4 class="fw-800 mb-1" style="font-family:Montserrat,sans-serif;font-weight:800">Добро пожаловать в CRM 👋</h4>
+    <p class="text-muted mb-0" style="font-size:.9rem">Фитнес-клуб «Атлетика» — система управления клиентами и тренировками</p>
+  </div>
+  <div class="row g-3 mb-4" id="statsRow">
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="stat-icon blue">👤</div>
+        <div><div class="stat-label">Клиентов</div><div class="stat-value" id="statClients">—</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="stat-icon green">💪</div>
+        <div><div class="stat-label">Тренеров</div><div class="stat-value" id="statTrainers">—</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="stat-icon orange">🗓️</div>
+        <div><div class="stat-label">Тренировок</div><div class="stat-value" id="statWorkouts">—</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="stat-icon purple">🎫</div>
+        <div><div class="stat-label">Абонементов</div><div class="stat-value" id="statMemberships">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="section-card">
+        <div class="section-card-header">
+          <h5>🗓️ Ближайшие тренировки</h5>
+          <a href="pages/workouts.html" class="btn-primary-fc" style="font-size:.78rem;padding:5px 12px">Все</a>
+        </div>
+        <div class="section-card-body">
+          <table class="fc-table"><thead><tr>
+            <th>Тип</th><th>Тренер</th><th>Дата</th><th>Мест</th>
+          </tr></thead>
+          <tbody id="upcomingBody">
+            <tr><td colspan="4"><div class="fc-loader"><div class="spinner"></div>Загрузка...</div></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="section-card">
+        <div class="section-card-header">
+          <h5>🎫 Активные абонементы</h5>
+          <a href="pages/memberships.html" class="btn-primary-fc" style="font-size:.78rem;padding:5px 12px">Все</a>
+        </div>
+        <div class="section-card-body">
+          <table class="fc-table"><thead><tr>
+            <th>Клиент</th><th>Тариф</th><th>До</th><th>Статус</th>
+          </tr></thead>
+          <tbody id="membershipsBody">
+            <tr><td colspan="4"><div class="fc-loader"><div class="spinner"></div>Загрузка...</div></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+async function loadDashboard() {
+  try {
+    const [users, workouts, memberships] = await Promise.all([
+      api.get('/users'),
+      api.get('/workouts/upcoming'),
+      api.get('/clientmemberships/active')
+    ]);
+
+    const clients  = users.filter(u => u.roleId === 3);
+    const trainers = users.filter(u => u.roleId === 2);
+    document.getElementById('statClients').textContent    = clients.length;
+    document.getElementById('statTrainers').textContent   = trainers.length;
+    document.getElementById('statWorkouts').textContent   = workouts.length;
+    document.getElementById('statMemberships').textContent = memberships.length;
+
+    // Ближайшие 5 тренировок
+    const upcomingBody = document.getElementById('upcomingBody');
+    const upcoming5 = workouts.slice(0, 5);
+    upcomingBody.innerHTML = upcoming5.length ? upcoming5.map(w => `
+      <tr>
+        <td><strong>${w.workoutTypeName}</strong></td>
+        <td>${w.trainerName}</td>
+        <td>${new Date(w.workoutDate).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+        <td>${w.currentParticipants}/${w.maxParticipants}</td>
+      </tr>`).join('') : `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📭</div><p>Нет предстоящих тренировок</p></div></td></tr>`;
+
+    // Активные абонементы 5 штук
+    const membershipsBody = document.getElementById('membershipsBody');
+    const active5 = memberships.slice(0, 5);
+    membershipsBody.innerHTML = active5.length ? active5.map(m => `
+      <tr>
+        <td>${m.clientName}</td>
+        <td>${m.planName}</td>
+        <td>${m.expiryDate}</td>
+        <td><span class="fc-badge active">Активен</span></td>
+      </tr>`).join('') : `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📭</div><p>Нет активных абонементов</p></div></td></tr>`;
+
+  } catch(e) {
+    console.error(e);
+    showToast('Ошибка загрузки данных. Убедитесь что API запущен.', 'danger');
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
