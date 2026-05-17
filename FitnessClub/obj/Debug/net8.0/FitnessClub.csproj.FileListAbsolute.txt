@@ -138,3 +138,4 @@ C:\Users\letli\Desktop\Файлы курсовой\FitnessClub\FitnessClub\obj\D
 C:\Users\letli\Desktop\Файлы курсовой\FitnessClub\FitnessClub\obj\Debug\net8.0\FitnessClub.genruntimeconfig.cache
 C:\Users\letli\Desktop\Файлы курсовой\FitnessClub\FitnessClub\obj\Debug\net8.0\ref\FitnessClub.dll
 C:\Users\letli\Desktop\Файлы курсовой\FitnessClub\FitnessClub\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+C:\Users\letli\Desktop\Файлы курсовой\FitnessClub\FitnessClub\obj\Debug\net8.0\FitnessClub.sourcelink.json
