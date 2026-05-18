@@ -11,7 +11,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "FitnessClub API", Version = "v1" }));
 
-// ← CORS: разрешаем запросы от frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -20,10 +19,21 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Миграция пропущена: {ex.Message}");
+}
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors("AllowAll");   // ← эта строка должна быть перед UseAuthorization
+app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 
