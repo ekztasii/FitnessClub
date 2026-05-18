@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Клиенты — Атлетика CRM</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/layout.js"></script>
+<script>if (!localStorage.getItem("fc_user")) { window.location.href = "../login.html"; }</script>
+<script>
+renderLayout('Клиенты', 'clients');
+
+document.getElementById('pageContent').innerHTML = `
+  <div class="section-card">
+    <div class="section-card-header">
+      <h5>👤 Список клиентов</h5>
+      <div class="search-box me-2">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Поиск по имени...">
+      </div>
+      <button class="btn-primary-fc" onclick="openModal()">+ Добавить</button>
+    </div>
+    <div class="section-card-body">
+      <table class="fc-table">
+        <thead><tr>
+          <th>#</th><th>ФИО</th><th>Телефон</th><th>Email</th><th>Роль</th><th>Действия</th>
+        </tr></thead>
+        <tbody id="tableBody">
+          <tr><td colspan="6"><div class="fc-loader"><div class="spinner"></div>Загрузка...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="crudModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Добавить клиента</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">ФИО *</label>
+            <input type="text" class="form-control" id="fFullName" placeholder="Иванов Иван Иванович">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Телефон</label>
+            <input type="text" class="form-control" id="fPhone" placeholder="+7 999 000 00 00">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="fEmail" placeholder="ivanov@mail.ru">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Роль *</label>
+            <select class="form-select" id="fRole">
+              <option value="1">Администратор</option>
+              <option value="2">Тренер</option>
+              <option value="3" selected>Клиент</option>
+            </select>
+          </div>
+          <div class="mb-3" id="passwordGroup">
+            <label class="form-label">Пароль *</label>
+            <input type="password" class="form-control" id="fPassword" placeholder="Минимум 6 символов">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+          <button class="btn-primary-fc" id="saveBtn" onclick="saveUser()">💾 Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+let allUsers = [];
+let editingId = null;
+
+async function loadUsers() {
+  try {
+    allUsers = await api.get('/users');
+    renderTable(allUsers);
+  } catch(e) {
+    document.getElementById('tableBody').innerHTML =
+      `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">⚠️</div><p>Ошибка загрузки. Проверьте что API запущен.</p></div></td></tr>`;
+  }
+}
+
+function renderTable(users) {
+  const tbody = document.getElementById('tableBody');
+  if (!users.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👤</div><p>Пользователи не найдены</p></div></td></tr>`;
+    return;
+  }
+  const roleMap = { 1: ['admin','Администратор'], 2: ['trainer','Тренер'], 3: ['client','Клиент'] };
+  tbody.innerHTML = users.map((u, i) => {
+    const [cls, name] = roleMap[u.roleId] || ['client','Клиент'];
+    return `<tr>
+      <td class="text-muted">${i+1}</td>
+      <td><strong>${u.fullName}</strong></td>
+      <td>${u.phoneNumber || '<span class="text-muted">—</span>'}</td>
+      <td>${u.email || '<span class="text-muted">—</span>'}</td>
+      <td><span class="fc-badge ${cls}">${name}</span></td>
+      <td>
+        <button class="btn-icon edit me-1" title="Редактировать" onclick="openModal(${u.id})">✏️</button>
+        <button class="btn-icon del" title="Удалить" onclick="deleteUser(${u.id},'${u.fullName}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal(id = null) {
+  editingId = id;
+  document.getElementById('modalTitle').textContent = id ? 'Редактировать пользователя' : 'Добавить пользователя';
+  document.getElementById('passwordGroup').style.display = id ? 'none' : '';
+  if (id) {
+    const u = allUsers.find(x => x.id === id);
+    document.getElementById('fFullName').value = u.fullName;
+    document.getElementById('fPhone').value    = u.phoneNumber || '';
+    document.getElementById('fEmail').value    = u.email || '';
+    document.getElementById('fRole').value     = u.roleId;
+  } else {
+    document.getElementById('fFullName').value = '';
+    document.getElementById('fPhone').value    = '';
+    document.getElementById('fEmail').value    = '';
+    document.getElementById('fRole').value     = '3';
+    document.getElementById('fPassword').value = '';
+  }
+  new bootstrap.Modal(document.getElementById('crudModal')).show();
+}
+
+async function saveUser() {
+  const fullName = document.getElementById('fFullName').value.trim();
+  if (!fullName) { showToast('Введите ФИО', 'warning'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = '⏳ Сохранение...'; btn.disabled = true;
+
+  try {
+    if (editingId) {
+      await api.put(`/users/${editingId}`, {
+        roleId: +document.getElementById('fRole').value,
+        fullName,
+        phoneNumber: document.getElementById('fPhone').value || null,
+        email: document.getElementById('fEmail').value || null,
+      });
+      showToast('Пользователь обновлён');
+    } else {
+      const pwd = document.getElementById('fPassword').value;
+      if (!pwd) { showToast('Введите пароль', 'warning'); return; }
+      await api.post('/users', {
+        roleId: +document.getElementById('fRole').value,
+        fullName,
+        phoneNumber: document.getElementById('fPhone').value || null,
+        email: document.getElementById('fEmail').value || null,
+        password: pwd
+      });
+      showToast('Пользователь добавлен');
+    }
+    bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+    loadUsers();
+  } catch(e) {
+    showToast('Ошибка сохранения', 'danger');
+  } finally {
+    btn.textContent = '💾 Сохранить'; btn.disabled = false;
+  }
+}
+
+function deleteUser(id, name) {
+  confirmDelete(`Удалить пользователя «${name}»?`, async () => {
+    try {
+      await api.delete(`/users/${id}`);
+      showToast('Пользователь удалён');
+      loadUsers();
+    } catch(e) { showToast('Ошибка удаления', 'danger'); }
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  renderTable(allUsers.filter(u => u.fullName.toLowerCase().includes(q)));
+});
+
+loadUsers();
+</script>
+</body>
+</html>
