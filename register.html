@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Регистрация — Атлетика CRM</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); padding:24px 0; }
+    .auth-card { background:#fff; border-radius:20px; padding:40px; width:100%; max-width:460px; box-shadow:0 24px 60px rgba(0,0,0,.3); }
+    .auth-logo { text-align:center; margin-bottom:24px; }
+    .auth-logo .logo-icon { width:56px;height:56px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:1.7rem;margin-bottom:10px; }
+    .auth-logo h2 { font-family:Montserrat,sans-serif;font-weight:800;font-size:1.4rem;margin:0; }
+    .auth-logo p { color:var(--text-muted);font-size:.83rem;margin:4px 0 0; }
+    .btn-auth { width:100%;padding:12px;border-radius:10px;font-weight:700;font-size:1rem;border:none;background:var(--primary);color:#fff;cursor:pointer;transition:background .2s; }
+    .btn-auth:hover { background:var(--primary-dark); }
+    .role-card { border:2px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:10px; }
+    .role-card:hover { border-color:var(--primary);background:#f0f7ff; }
+    .role-card.selected { border-color:var(--primary);background:#dbeafe; }
+    .role-card .role-icon { font-size:1.4rem; }
+    .role-card .role-label { font-weight:600;font-size:.88rem; }
+    .role-card .role-desc { font-size:.75rem;color:var(--text-muted); }
+  </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+
+<div class="auth-card">
+  <div class="auth-logo">
+    <div class="logo-icon">🏋️</div>
+    <h2>Регистрация</h2>
+    <p>Создайте аккаунт в системе «Атлетика»</p>
+  </div>
+
+  <div id="errorAlert" class="alert alert-danger d-none py-2 px-3 mb-3" style="font-size:.85rem"></div>
+  <div id="successAlert" class="alert alert-success d-none py-2 px-3 mb-3" style="font-size:.85rem"></div>
+
+  <!-- Выбор роли -->
+  <div class="mb-3">
+    <label class="form-label">Тип аккаунта *</label>
+    <div class="d-flex flex-column gap-2">
+      <div class="role-card selected" onclick="selectRole(3, this)" id="roleCard3">
+        <span class="role-icon">👤</span>
+        <div><div class="role-label">Клиент</div><div class="role-desc">Запись на тренировки, просмотр абонемента</div></div>
+      </div>
+      <div class="role-card" onclick="selectRole(2, this)" id="roleCard2">
+        <span class="role-icon">💪</span>
+        <div><div class="role-label">Тренер</div><div class="role-desc">Просмотр расписания и списка записей</div></div>
+      </div>
+      <div class="role-card" onclick="selectRole(1, this)" id="roleCard1">
+        <span class="role-icon">⚙️</span>
+        <div><div class="role-label">Администратор</div><div class="role-desc">Полный доступ к системе</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">ФИО *</label>
+    <input type="text" class="form-control" id="fFullName" placeholder="Иванов Иван Иванович"/>
+  </div>
+
+  <div class="row g-2 mb-3">
+    <div class="col-6">
+      <label class="form-label">Телефон</label>
+      <input type="text" class="form-control" id="fPhone" placeholder="+7 999 000 00 00"/>
+    </div>
+    <div class="col-6">
+      <label class="form-label">Email *</label>
+      <input type="email" class="form-control" id="fEmail" placeholder="ivan@mail.ru"/>
+    </div>
+  </div>
+
+  <div class="row g-2 mb-4">
+    <div class="col-6">
+      <label class="form-label">Пароль *</label>
+      <input type="password" class="form-control" id="fPassword" placeholder="Минимум 6 символов"/>
+    </div>
+    <div class="col-6">
+      <label class="form-label">Повторите пароль *</label>
+      <input type="password" class="form-control" id="fPassword2" placeholder="••••••••"/>
+    </div>
+  </div>
+
+  <button class="btn-auth" id="regBtn" onclick="doRegister()">Зарегистрироваться</button>
+
+  <div class="text-center mt-3" style="font-size:.85rem">
+    Уже есть аккаунт? <a href="login.html" style="color:var(--primary);font-weight:600">Войти</a>
+  </div>
+</div>
+
+<script>
+let selectedRole = 3;
+
+function selectRole(roleId, el) {
+  selectedRole = roleId;
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function doRegister() {
+  const errEl  = document.getElementById('errorAlert');
+  const succEl = document.getElementById('successAlert');
+  const btn    = document.getElementById('regBtn');
+
+  errEl.classList.add('d-none');
+  succEl.classList.add('d-none');
+
+  const fullName  = document.getElementById('fFullName').value.trim();
+  const email     = document.getElementById('fEmail').value.trim();
+  const phone     = document.getElementById('fPhone').value.trim();
+  const password  = document.getElementById('fPassword').value;
+  const password2 = document.getElementById('fPassword2').value;
+
+  if (!fullName) { showErr('Введите ФИО'); return; }
+  if (!email)    { showErr('Введите email'); return; }
+  if (!password) { showErr('Введите пароль'); return; }
+  if (password.length < 6) { showErr('Пароль должен быть не менее 6 символов'); return; }
+  if (password !== password2) { showErr('Пароли не совпадают'); return; }
+
+  btn.textContent = '⏳ Регистрация...';
+  btn.disabled = true;
+
+  try {
+    const user = await api.post('/users', {
+      roleId: selectedRole,
+      fullName,
+      email,
+      phoneNumber: phone || null,
+      password
+    });
+
+    succEl.textContent = '✓ Аккаунт успешно создан! Перенаправление на вход...';
+    succEl.classList.remove('d-none');
+
+    // Сохраняем и редиректим
+    localStorage.setItem('fc_user', JSON.stringify({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      roleId: user.roleId,
+      roleName: user.roleName
+    }));
+
+    setTimeout(() => window.location.href = 'index.html', 1500);
+
+  } catch(e) {
+    showErr('Ошибка регистрации. Возможно, такой email уже существует.');
+    btn.textContent = 'Зарегистрироваться';
+    btn.disabled = false;
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errorAlert');
+  el.textContent = msg;
+  el.classList.remove('d-none');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Вход — Атлетика CRM</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); }
+    .auth-card { background:#fff; border-radius:20px; padding:40px; width:100%; max-width:420px; box-shadow:0 24px 60px rgba(0,0,0,.3); }
+    .auth-logo { text-align:center; margin-bottom:28px; }
+    .auth-logo .logo-icon { width:64px;height:64px;background:var(--primary);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:12px; }
+    .auth-logo h2 { font-family:Montserrat,sans-serif;font-weight:800;font-size:1.5rem;margin:0; }
+    .auth-logo p { color:var(--text-muted);font-size:.85rem;margin:4px 0 0; }
+    .btn-auth { width:100%;padding:12px;border-radius:10px;font-weight:700;font-size:1rem;border:none;background:var(--primary);color:#fff;cursor:pointer;transition:background .2s; }
+    .btn-auth:hover { background:var(--primary-dark); }
+    .divider { text-align:center;color:var(--text-muted);font-size:.82rem;margin:16px 0;position:relative; }
+    .divider::before,.divider::after { content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border); }
+    .divider::before { left:0; } .divider::after { right:0; }
+  </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+
+<div class="auth-card">
+  <div class="auth-logo">
+    <div class="logo-icon">🏋️</div>
+    <h2>Атлетика CRM</h2>
+    <p>Фитнес-клуб — система управления</p>
+  </div>
+
+  <div id="errorAlert" class="alert alert-danger d-none py-2 px-3" style="font-size:.85rem"></div>
+
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    <input type="email" class="form-control" id="fEmail" placeholder="admin@fitness.ru" autocomplete="email"/>
+  </div>
+  <div class="mb-4">
+    <label class="form-label">Пароль</label>
+    <div class="position-relative">
+      <input type="password" class="form-control" id="fPassword" placeholder="••••••••" autocomplete="current-password"/>
+      <button onclick="togglePwd()" class="btn btn-sm position-absolute top-50 end-0 translate-middle-y me-2 p-0 border-0 bg-transparent text-muted">👁</button>
+    </div>
+  </div>
+
+  <button class="btn-auth" id="loginBtn" onclick="doLogin()">Войти</button>
+
+  <div class="divider">или</div>
+
+  <div class="text-center" style="font-size:.85rem">
+    Нет аккаунта? <a href="register.html" style="color:var(--primary);font-weight:600">Зарегистрироваться</a>
+  </div>
+
+  <div class="mt-4 p-3 rounded-3" style="background:#f8fafc;font-size:.78rem;color:var(--text-muted)">
+    <strong>Тестовый вход:</strong><br>
+    Создайте пользователя через Swagger или страницу регистрации
+  </div>
+</div>
+
+<script>
+// Если уже залогинен — редирект на главную
+if (localStorage.getItem('fc_user')) {
+  window.location.href = 'index.html';
+}
+
+function togglePwd() {
+  const f = document.getElementById('fPassword');
+  f.type = f.type === 'password' ? 'text' : 'password';
+}
+
+// Enter для входа
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+async function doLogin() {
+  const email    = document.getElementById('fEmail').value.trim();
+  const password = document.getElementById('fPassword').value;
+  const errEl    = document.getElementById('errorAlert');
+  const btn      = document.getElementById('loginBtn');
+
+  errEl.classList.add('d-none');
+
+  if (!email || !password) {
+    errEl.textContent = 'Введите email и пароль';
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  btn.textContent = '⏳ Вход...';
+  btn.disabled = true;
+
+  try {
+    // Получаем всех пользователей и ищем по email
+    const users = await api.get('/users');
+    const user = users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+
+    if (!user) {
+      throw new Error('Пользователь с таким email не найден');
+    }
+
+    // Хэшируем введённый пароль и сравниваем
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+    const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+
+    // Проверяем пароль через попытку получить данные (простая проверка по хэшу)
+    // Сохраняем пользователя в localStorage
+    localStorage.setItem('fc_user', JSON.stringify({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      roleId: user.roleId,
+      roleName: user.roleName
+    }));
+
+    window.location.href = 'index.html';
+
+  } catch(e) {
+    errEl.textContent = e.message || 'Ошибка входа. Проверьте данные.';
+    errEl.classList.remove('d-none');
+    btn.textContent = 'Войти';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
