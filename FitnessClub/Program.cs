@@ -19,22 +19,25 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseCors("AllowAll");
+app.UseAuthorization();
+app.MapControllers();
+
 try
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
+    await db.Database.MigrateAsync(); // Используем асинхронную версию
 }
 catch (Exception ex)
 {
     Console.WriteLine($"Миграция пропущена: {ex.Message}");
 }
-
-app.UseSwagger();
-app.UseSwaggerUI();
-
-app.UseCors("AllowAll");
-app.UseAuthorization();
-app.MapControllers();
 
 app.Run();
