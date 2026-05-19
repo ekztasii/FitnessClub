@@ -40,18 +40,11 @@ const api = {
   }
 };
 
-// Role helpers
-// roleId: 1=Администратор, 2=Тренер, 3=Клиент
 function getCurrentUser() {
   const u = localStorage.getItem('fc_user');
   return u ? JSON.parse(u) : null;
 }
-
-function getRoleId() {
-  const u = getCurrentUser();
-  return u ? u.roleId : null;
-}
-
+function getRoleId() { const u = getCurrentUser(); return u ? u.roleId : null; }
 function isAdmin()   { return getRoleId() === 1; }
 function isTrainer() { return getRoleId() === 2; }
 function isClient()  { return getRoleId() === 3; }

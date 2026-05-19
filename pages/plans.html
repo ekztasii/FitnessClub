@@ -62,7 +62,7 @@ let allPlans = [];
 
 async function loadPlans() {
   try {
-    allPlans = await api.get('/membershipplans');
+    allPlans = await api.get('/MembershipPlans');
     renderTable();
   } catch(e) {
     document.getElementById('tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
@@ -120,8 +120,8 @@ async function savePlan() {
   };
   if (!body.planName || isNaN(body.price)) { alert('Заполните все поля'); return; }
   try {
-    if (id) await api.put('/membershipplans/' + id, body);
-    else await api.post('/membershipplans', body);
+    if (id) await api.put('/MembershipPlans/' + id, body);
+    else await api.post('/MembershipPlans', body);
     closeModal('modal');
     loadPlans();
   } catch(e) { alert('Ошибка: ' + e.message); }
@@ -129,7 +129,7 @@ async function savePlan() {
 
 async function deletePlan(id) {
   if (!confirm('Удалить план?')) return;
-  try { await api.delete('/membershipplans/' + id); loadPlans(); }
+  try { await api.delete('/MembershipPlans/' + id); loadPlans(); }
   catch(e) { alert('Ошибка: ' + e.message); }
 }
 </script>

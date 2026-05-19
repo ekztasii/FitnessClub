@@ -11,16 +11,20 @@
 <script src="../js/layout.js"></script>
 <script>
 if (!localStorage.getItem('fc_user')) window.location.href = '../login.html';
-const pageTitle = isClient() ? 'Мои записи' : 'Записи на тренировки';
-renderLayout(pageTitle, 'registrations');
+renderLayout(isClient() ? 'Мои записи' : 'Записи на тренировки', 'registrations');
 </script>
 
 <div class="modal-overlay" id="modal">
   <div class="modal-box">
-    <div class="modal-title">Записать на тренировку</div>
-    <input type="hidden" id="mId"/>
-    <div class="form-group"><label class="form-label">Тренировка</label><select class="form-control" id="mWorkout"></select></div>
-    <div class="form-group" id="clientGroup"><label class="form-label">Клиент</label><select class="form-control" id="mClient"></select></div>
+    <div class="modal-title">Записаться на тренировку</div>
+    <div class="form-group">
+      <label class="form-label">Тренировка</label>
+      <select class="form-control" id="mWorkout"></select>
+    </div>
+    <div class="form-group" id="clientGroup">
+      <label class="form-label">Клиент</label>
+      <select class="form-control" id="mClient"></select>
+    </div>
     <div class="modal-footer">
       <button class="btn-outline" onclick="closeModal('modal')">Отмена</button>
       <button class="btn-modal-save" onclick="saveReg()">Записать</button>
@@ -49,8 +53,8 @@ content.innerHTML = `
       <div class="table-card-title"><span class="title-dot" style="background:var(--green)"></span>${isClient() ? 'Мои записи' : 'Все записи'}</div>
     </div>
     <table class="fc-table">
-      <thead><tr><th>#</th><th>Тренировка</th><th>Клиент</th><th>Дата записи</th><th>Посещение</th><th>Действия</th></tr></thead>
-      <tbody id="tbody"><tr><td colspan="6"><div class="loading-row"><span class="spinner"></span> Загрузка</div></td></tr></tbody>
+      <thead><tr><th>#</th><th>Тренировка</th><th>Дата тренировки</th><th>Клиент</th><th>Дата записи</th><th>Посещение</th><th>Действия</th></tr></thead>
+      <tbody id="tbody"><tr><td colspan="7"><div class="loading-row"><span class="spinner"></span> Загрузка</div></td></tr></tbody>
     </table>
   </div>
 `;
@@ -59,34 +63,45 @@ let allRegs = [];
 
 async function loadRegs() {
   try {
-    let regs = await api.get('/workoutregistrations');
-    if (isClient()) regs = regs.filter(r => r.userId === user.id || r.clientId === user.id);
+    let regs;
+    // Клиент видит только свои записи через by-client
+    if (isClient()) {
+      regs = await api.get('/WorkoutRegistrations/by-client/' + user.id);
+    } else {
+      regs = await api.get('/WorkoutRegistrations');
+    }
     allRegs = regs;
     renderTable();
   } catch(e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
   }
 }
 
 function renderTable() {
   const tbody = document.getElementById('tbody');
   if (!allRegs.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><p>Записей не найдено</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <p>Записей не найдено</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = allRegs.map((r, i) => `
     <tr>
       <td class="muted">${i + 1}</td>
-      <td><strong>${r.workoutTypeName || r.workoutId || '—'}</strong></td>
-      <td class="muted">${r.clientName || r.userName || '—'}</td>
+      <td><strong>${r.workoutTypeName || '—'}</strong></td>
+      <td class="muted">${fmtDate(r.workoutDate)}</td>
+      <td class="muted">${r.clientName || '—'}</td>
       <td class="muted">${fmtDate(r.registrationDate)}</td>
       <td>
-        <span class="badge ${r.attendanceMarked ? 'badge-green' : 'badge-gray'}">${r.attendanceMarked ? 'Посетил' : 'Не отмечен'}</span>
+        <span class="badge ${r.attendanceMarked ? 'badge-green' : 'badge-gray'}">
+          ${r.attendanceMarked ? 'Посетил' : 'Не отмечен'}
+        </span>
       </td>
-      <td>
-        ${canManage && !r.attendanceMarked ? `<button class="btn-icon" onclick="markAttendance(${r.id})" title="Отметить посещение" style="color:var(--green)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        </button>` : ''}
+      <td style="display:flex;gap:4px">
+        ${canManage && !r.attendanceMarked ? `
+          <button class="btn-icon" onclick="markAttendance(${r.id})" title="Отметить посещение" style="color:var(--green)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>` : ''}
         <button class="btn-icon danger" onclick="deleteReg(${r.id})" title="Удалить">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
@@ -98,49 +113,67 @@ function renderTable() {
 let workouts = [], clients = [];
 
 async function openAdd() {
-  document.getElementById('mId').value = '';
-  workouts = await api.get('/workouts/upcoming');
-  document.getElementById('mWorkout').innerHTML = workouts.map(w => `<option value="${w.id}">${w.workoutTypeName || 'Тренировка'} — ${fmtDate(w.workoutDate)}</option>`).join('');
+  // Загружаем предстоящие тренировки
+  workouts = await api.get('/Workouts/upcoming');
+  if (!workouts.length) {
+    alert('Нет предстоящих тренировок для записи');
+    return;
+  }
+  document.getElementById('mWorkout').innerHTML = workouts.map(w =>
+    `<option value="${w.id}">${w.workoutTypeName || 'Тренировка'} — ${fmtDate(w.workoutDate)} (мест: ${w.maxParticipants - w.currentParticipants})</option>`
+  ).join('');
 
   if (isClient()) {
     document.getElementById('clientGroup').style.display = 'none';
   } else {
     document.getElementById('clientGroup').style.display = 'block';
-    const all = await api.get('/users');
+    const all = await api.get('/Users');
     clients = all.filter(u => u.roleId === 3);
-    document.getElementById('mClient').innerHTML = clients.map(c => `<option value="${c.id}">${c.fullName}</option>`).join('');
+    document.getElementById('mClient').innerHTML = clients.map(c =>
+      `<option value="${c.id}">${c.fullName}</option>`
+    ).join('');
   }
   openModal('modal');
 }
 
 async function saveReg() {
+  // CreateWorkoutRegistrationDto: { workoutId, userId }
   const body = {
     workoutId: parseInt(document.getElementById('mWorkout').value),
-    userId: isClient() ? user.id : parseInt(document.getElementById('mClient').value),
-    registrationDate: new Date().toISOString(),
-    attendanceMarked: false
+    userId: isClient() ? user.id : parseInt(document.getElementById('mClient').value)
   };
   try {
-    await api.post('/workoutregistrations', body);
+    await api.post('/WorkoutRegistrations', body);
     closeModal('modal');
     loadRegs();
-  } catch(e) { alert('Ошибка: ' + e.message); }
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
 }
 
 async function markAttendance(id) {
-  try { await api.patch('/WorkoutRegistrations/' + id + '/attendance', { attendanceMarked: true }); loadRegs(); }
-  catch(e) { alert('Ошибка: ' + e.message); }
+  // MarkAttendanceDto: { attendanceMarked: true }
+  try {
+    await api.patch('/WorkoutRegistrations/' + id + '/attendance', { attendanceMarked: true });
+    loadRegs();
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
 }
 
 async function deleteReg(id) {
   if (!confirm('Удалить запись?')) return;
-  try { await api.delete('/workoutregistrations/' + id); loadRegs(); }
-  catch(e) { alert('Ошибка: ' + e.message); }
+  try {
+    await api.delete('/WorkoutRegistrations/' + id);
+    loadRegs();
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
 }
 
 function fmtDate(d) {
   if (!d) return '—';
-  return new Date(d).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  return new Date(d).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
 loadRegs();

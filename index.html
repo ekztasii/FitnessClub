@@ -122,7 +122,7 @@ if (isAdmin()) {
 async function loadAdminDashboard() {
   try {
     const [users, workouts, memberships] = await Promise.all([
-      api.get('/users'), api.get('/workouts/upcoming'), api.get('/clientmemberships/active')
+      api.get('/Users'), api.get('/Workouts/upcoming'), api.get('/ClientMemberships/active')
     ]);
     document.getElementById('statClients').textContent     = users.filter(u => u.roleId === 3).length;
     document.getElementById('statTrainers').textContent    = users.filter(u => u.roleId === 2).length;
@@ -157,7 +157,7 @@ async function loadAdminDashboard() {
 
 async function loadTrainerDashboard() {
   try {
-    const workouts = await api.get('/workouts/upcoming');
+    const workouts = await api.get('/Workouts/upcoming');
     const mine = workouts.filter(w => w.trainerId === user.id);
     document.getElementById('trainerBody').innerHTML = mine.slice(0,8).length
       ? mine.slice(0,8).map(w => `<tr>
@@ -173,7 +173,7 @@ async function loadTrainerDashboard() {
 
 async function loadClientDashboard() {
   try {
-    const workouts = await api.get('/workouts/upcoming');
+    const workouts = await api.get('/Workouts/upcoming');
     document.getElementById('clientBody').innerHTML = workouts.slice(0,5).length
       ? workouts.slice(0,5).map(w => `<tr>
           <td><strong>${w.workoutTypeName || '—'}</strong></td>
@@ -184,7 +184,7 @@ async function loadClientDashboard() {
   } catch(e) { document.getElementById('clientBody').innerHTML = emptyRow(3, 'Ошибка'); }
 
   try {
-    const memberships = await api.get('/clientmemberships/active');
+    const memberships = await api.get('/ClientMemberships/active');
     const mine = memberships.filter(m => m.clientId === user.id || m.userId === user.id);
     document.getElementById('clientMemberBody').innerHTML = mine.length
       ? mine.map(m => `<tr>

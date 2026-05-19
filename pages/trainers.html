@@ -63,7 +63,7 @@ let allTrainers = [];
 
 async function loadTrainers() {
   try {
-    const all = await api.get('/users');
+    const all = await api.get('/Users');
     allTrainers = all.filter(u => u.roleId === 2);
     renderTable(allTrainers);
   } catch(e) {
@@ -129,8 +129,8 @@ async function saveTrainer() {
   };
   if (!body.fullName || !body.email) { alert('Заполните ФИО и Email'); return; }
   try {
-    if (id) await api.put('/users/' + id, body);
-    else await api.post('/users', body);
+    if (id) await api.put('/Users/' + id, body);
+    else await api.post('/Users', body);
     closeModal('modal');
     loadTrainers();
   } catch(e) { alert('Ошибка: ' + e.message); }
@@ -138,7 +138,7 @@ async function saveTrainer() {
 
 async function deleteTrainer(id) {
   if (!confirm('Удалить тренера?')) return;
-  try { await api.delete('/users/' + id); loadTrainers(); }
+  try { await api.delete('/Users/' + id); loadTrainers(); }
   catch(e) { alert('Ошибка: ' + e.message); }
 }
 </script>

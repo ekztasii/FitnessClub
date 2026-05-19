@@ -17,9 +17,18 @@ renderLayout(isClient() ? 'Мой абонемент' : 'Абонементы', 
 <div class="modal-overlay" id="modal">
   <div class="modal-box">
     <div class="modal-title">Оформить абонемент</div>
-    <div class="form-group" id="clientGroup"><label class="form-label">Клиент</label><select class="form-control" id="mClient"></select></div>
-    <div class="form-group"><label class="form-label">Тариф</label><select class="form-control" id="mPlan"></select></div>
-    <div class="form-group"><label class="form-label">Дата начала</label><input type="date" class="form-control" id="mDate"/></div>
+    <div class="form-group">
+      <label class="form-label">Клиент</label>
+      <select class="form-control" id="mClient"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Тариф</label>
+      <select class="form-control" id="mPlan"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Дата начала</label>
+      <input type="date" class="form-control" id="mDate"/>
+    </div>
     <div class="modal-footer">
       <button class="btn-outline" onclick="closeModal('modal')">Отмена</button>
       <button class="btn-modal-save" onclick="saveMembership()">Оформить</button>
@@ -55,9 +64,14 @@ content.innerHTML = `
 
 async function loadMemberships() {
   try {
-    let all = await api.get('/clientmemberships');
-    if (isClient()) all = all.filter(m => m.userId === user.id || m.clientId === user.id);
-    renderTable(all);
+    let list;
+    // Клиент видит только свои через by-client
+    if (isClient()) {
+      list = await api.get('/ClientMemberships/by-client/' + user.id);
+    } else {
+      list = await api.get('/ClientMemberships');
+    }
+    renderTable(list);
   } catch(e) {
     document.getElementById('tbody').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
   }
@@ -67,71 +81,90 @@ function renderTable(list) {
   const cols = isAdmin() ? 8 : 7;
   const tbody = document.getElementById('tbody');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><p>Абонементы не найдены</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols}"><div class="empty-state">
+      <div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <p>Абонементы не найдены</p></div></td></tr>`;
     return;
   }
-  const now = new Date();
-  tbody.innerHTML = list.map((m, i) => {
-    const exp = new Date(m.expiryDate);
-    const active = exp > now;
-    return `<tr>
+  tbody.innerHTML = list.map((m, i) => `
+    <tr>
       <td class="muted">${i + 1}</td>
-      <td><strong>${m.clientName || m.userName || '—'}</strong></td>
+      <td><strong>${m.clientName || '—'}</strong></td>
       <td>${m.planName || '—'}</td>
       <td class="muted">${fmtDate(m.purchaseDate)}</td>
       <td class="muted">${fmtDate(m.expiryDate)}</td>
       <td><span class="badge badge-blue">${m.visitsUsed ?? 0} / ${m.allowedVisits ?? '∞'}</span></td>
-      <td><span class="badge ${active ? 'badge-green' : 'badge-red'}">${active ? 'Активен' : 'Истёк'}</span></td>
-      ${isAdmin() ? `<td>
-        ${active ? `<button class="btn-icon" onclick="addVisit(${m.id})" title="Добавить посещение" style="color:var(--green)">
+      <td><span class="badge ${m.isActive ? 'badge-green' : 'badge-red'}">${m.isActive ? 'Активен' : 'Истёк'}</span></td>
+      ${isAdmin() ? `<td style="display:flex;gap:4px">
+        ${m.isActive ? `<button class="btn-icon" onclick="addVisit(${m.id})" title="Списать посещение" style="color:var(--green)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         </button>` : ''}
         <button class="btn-icon danger" onclick="deleteMembership(${m.id})" title="Удалить">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </td>` : ''}
-    </tr>`;
-  }).join('');
+    </tr>
+  `).join('');
 }
 
 async function openAdd() {
-  const all = await api.get('/users');
+  const all = await api.get('/Users');
   const clients = all.filter(u => u.roleId === 3);
-  document.getElementById('mClient').innerHTML = clients.map(c => `<option value="${c.id}">${c.fullName}</option>`).join('');
-  const plans = await api.get('/membershipplans');
-  document.getElementById('mPlan').innerHTML = plans.map(p => `<option value="${p.id}">${p.planName} — ${p.price} руб.</option>`).join('');
+  document.getElementById('mClient').innerHTML = clients.map(c =>
+    `<option value="${c.id}">${c.fullName}</option>`
+  ).join('');
+
+  const plans = await api.get('/MembershipPlans');
+  document.getElementById('mPlan').innerHTML = plans.map(p =>
+    `<option value="${p.id}">${p.planName} — ${Number(p.price).toLocaleString('ru-RU')} ₽ / ${p.validityDays} дн.</option>`
+  ).join('');
+
   document.getElementById('mDate').value = new Date().toISOString().split('T')[0];
   openModal('modal');
 }
 
 async function saveMembership() {
+  // CreateClientMembershipDto: { userId, membershipPlanId, purchaseDate (DateOnly) }
+  const dateVal = document.getElementById('mDate').value;
   const body = {
     userId: parseInt(document.getElementById('mClient').value),
     membershipPlanId: parseInt(document.getElementById('mPlan').value),
-    purchaseDate: document.getElementById('mDate').value,
-    visitsUsed: 0
+    purchaseDate: dateVal  // DateOnly — просто строка "YYYY-MM-DD"
   };
   try {
-    await api.post('/clientmemberships', body);
+    await api.post('/ClientMemberships', body);
     closeModal('modal');
     loadMemberships();
-  } catch(e) { alert('Ошибка: ' + e.message); }
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
 }
 
 async function addVisit(id) {
-  try { await api.patch('/clientmemberships/' + id + '/increment-visit'); loadMemberships(); }
-  catch(e) { alert('Ошибка: ' + e.message); }
+  // PATCH /ClientMemberships/{id}/increment-visit — без тела
+  try {
+    await api.patch('/ClientMemberships/' + id + '/increment-visit');
+    loadMemberships();
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
 }
 
 async function deleteMembership(id) {
   if (!confirm('Удалить абонемент?')) return;
-  try { await api.delete('/clientmemberships/' + id); loadMemberships(); }
-  catch(e) { alert('Ошибка: ' + e.message); }
+  try {
+    await api.delete('/ClientMemberships/' + id);
+    loadMemberships();
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
 }
 
 function fmtDate(d) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('ru-RU');
+  // Поддержка DateOnly (строка "YYYY-MM-DD") и DateTime
+  const date = new Date(d);
+  return isNaN(date) ? d : date.toLocaleDateString('ru-RU');
 }
 
 loadMemberships();
