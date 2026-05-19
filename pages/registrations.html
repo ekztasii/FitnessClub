@@ -128,7 +128,7 @@ async function saveReg() {
 }
 
 async function markAttendance(id) {
-  try { await api.patch('/workoutregistrations/' + id + '/attendance'); loadRegs(); }
+  try { await api.patch('/WorkoutRegistrations/' + id + '/attendance', { attendanceMarked: true }); loadRegs(); }
   catch(e) { alert('Ошибка: ' + e.message); }
 }
 
