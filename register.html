@@ -168,7 +168,7 @@ async function doRegister() {
   btn.disabled = true;
 
   try {
-    const user = await api.post('/users', {
+    const user = await api.post('/Users', {
       roleId: selectedRole,
       fullName,
       email,

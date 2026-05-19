@@ -80,7 +80,7 @@ async function doLogin() {
   btn.disabled = true;
 
   try {
-    const users = await api.get('/users');
+    const users = await api.get('/Users');
     const user = users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
 
     if (!user) throw new Error('Пользователь с таким email не найден');

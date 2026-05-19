@@ -19,7 +19,7 @@ renderLayout('Типы тренировок', 'workout-types');
     <div class="modal-title" id="modalTitle">Добавить тип тренировки</div>
     <input type="hidden" id="mId"/>
     <div class="form-group">
-      <label class="form-label">Название (typeName)</label>
+      <label class="form-label">Название</label>
       <input type="text" class="form-control" id="mTypeName" placeholder="Например: Силовая, Кардио, Йога"/>
     </div>
     <div class="form-group">
@@ -118,7 +118,7 @@ function renderTable() {
 
 async function loadTrainers() {
   if (!trainers.length) {
-    const all = await api.get('/users');
+    const all = await api.get('/Users');
     trainers = all.filter(u => u.roleId === 2);
   }
   document.getElementById('mTrainer').innerHTML = trainers.map(t => `<option value="${t.id}">${t.fullName}</option>`).join('');
