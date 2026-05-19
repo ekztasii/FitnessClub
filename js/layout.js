@@ -1,76 +1,192 @@
-// ── Определяем находимся ли мы в папке pages/ или в корне ────────────────
-const isInPages = window.location.pathname.includes('/pages/');
-const base = isInPages ? '../' : '';
+// SVG icons (inline, no emoji)
+const ICONS = {
+  home: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  users: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  trainer: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21a9 9 0 0 1 18 0"/></svg>`,
+  workout: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  type: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>`,
+  reg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+  member: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`,
+  plan: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
+  logout: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  lock: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+  logo: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`,
+};
 
-// ── Генерация общего layout ───────────────────────────────────────────────
-function renderLayout(pageTitle, activePage) {
-  const navItems = [
-    { id: 'dashboard',     icon: '🏠', label: 'Главная',         href: `${base}index.html` },
-    { id: 'clients',       icon: '👤', label: 'Клиенты',         href: `${base}pages/clients.html` },
-    { id: 'trainers',      icon: '💪', label: 'Тренеры',         href: `${base}pages/trainers.html` },
-    { id: 'workouts',      icon: '🗓️',  label: 'Тренировки',     href: `${base}pages/workouts.html` },
-    { id: 'workout-types', icon: '📋', label: 'Типы тренировок', href: `${base}pages/workout-types.html` },
-    { id: 'registrations', icon: '✅', label: 'Записи',          href: `${base}pages/registrations.html` },
-    { id: 'memberships',   icon: '🎫', label: 'Абонементы',      href: `${base}pages/memberships.html` },
-    { id: 'plans',         icon: '💳', label: 'Планы',           href: `${base}pages/plans.html` },
+// Navigation config by role
+// roleId: 1=Admin, 2=Trainer, 3=Client
+function getNavConfig(roleId) {
+  const base = [
+    { label: 'Главная', icon: 'home', href: 'index.html', key: 'dashboard' }
   ];
 
-  const navHTML = navItems.map(item => `
-    <a href="${item.href}" class="nav-link ${activePage === item.id ? 'active' : ''}">
-      <span class="nav-icon">${item.icon}</span>
-      <span>${item.label}</span>
-    </a>
-  `).join('');
+  if (roleId === 1) { // Admin — sees everything
+    return [
+      { section: 'Обзор' },
+      { label: 'Главная', icon: 'home', href: 'index.html', key: 'dashboard' },
+      { section: 'Управление' },
+      { label: 'Клиенты', icon: 'users', href: 'pages/clients.html', key: 'clients' },
+      { label: 'Тренеры', icon: 'trainer', href: 'pages/trainers.html', key: 'trainers' },
+      { label: 'Тренировки', icon: 'workout', href: 'pages/workouts.html', key: 'workouts' },
+      { label: 'Типы тренировок', icon: 'type', href: 'pages/workout-types.html', key: 'workout-types' },
+      { section: 'Абонементы' },
+      { label: 'Записи', icon: 'reg', href: 'pages/registrations.html', key: 'registrations' },
+      { label: 'Абонементы', icon: 'member', href: 'pages/memberships.html', key: 'memberships' },
+      { label: 'Планы', icon: 'plan', href: 'pages/plans.html', key: 'plans' },
+    ];
+  }
 
-  const user = JSON.parse(localStorage.getItem('fc_user') || 'null');
-  const userName = user ? user.fullName : 'Пользователь';
+  if (roleId === 2) { // Trainer — sees workouts and registrations only
+    return [
+      { section: 'Обзор' },
+      { label: 'Главная', icon: 'home', href: 'index.html', key: 'dashboard' },
+      { section: 'Моя работа' },
+      { label: 'Тренировки', icon: 'workout', href: 'pages/workouts.html', key: 'workouts' },
+      { label: 'Типы тренировок', icon: 'type', href: 'pages/workout-types.html', key: 'workout-types' },
+      { label: 'Записи на тренировки', icon: 'reg', href: 'pages/registrations.html', key: 'registrations' },
+    ];
+  }
 
-  document.body.insertAdjacentHTML('afterbegin', `
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="logo-icon">🏋️</div>
-        <div class="brand-name">Атлетика</div>
-        <div class="brand-sub">CRM Система</div>
-      </div>
-      <nav class="sidebar-nav">
-        <div class="nav-section-title">Навигация</div>
-        ${navHTML}
-      </nav>
-      <div class="sidebar-footer">
-        <div style="color:rgba(255,255,255,.6);font-size:.8rem;margin-bottom:8px">👤 ${userName}</div>
-        <a href="${base}login.html" onclick="localStorage.removeItem('fc_user')"
-           style="color:rgba(255,100,100,.8);font-size:.75rem;text-decoration:none">🚪 Выйти</a>
-        <div style="margin-top:6px">© 2026 FitnessClub CRM</div>
-      </div>
-    </aside>
+  if (roleId === 3) { // Client — sees their own workouts and memberships
+    return [
+      { section: 'Обзор' },
+      { label: 'Главная', icon: 'home', href: 'index.html', key: 'dashboard' },
+      { section: 'Мои данные' },
+      { label: 'Тренировки', icon: 'workout', href: 'pages/workouts.html', key: 'workouts' },
+      { label: 'Мои записи', icon: 'reg', href: 'pages/registrations.html', key: 'registrations' },
+      { label: 'Мой абонемент', icon: 'member', href: 'pages/memberships.html', key: 'memberships' },
+    ];
+  }
 
-    <div class="main-wrapper">
-      <header class="topbar">
-        <button class="btn btn-sm btn-outline-secondary d-md-none me-2"
-          onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-        <span class="topbar-title">${pageTitle}</span>
-      </header>
-      <main class="page-content" id="pageContent"></main>
-    </div>
+  return base;
+}
 
-    <div id="toastContainer"></div>
+function getRoleName(roleId) {
+  return { 1: 'Администратор', 2: 'Тренер', 3: 'Клиент' }[roleId] || 'Пользователь';
+}
 
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">⚠️ Подтверждение удаления</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <p id="deleteModalMessage" class="mb-0">Вы уверены?</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
-            <button class="btn btn-danger btn-sm" id="confirmDeleteBtn">Удалить</button>
+function getRolePillClass(roleId) {
+  return { 1: 'admin', 2: 'trainer', 3: 'client' }[roleId] || 'client';
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(' ');
+  return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name[0].toUpperCase();
+}
+
+// Detect if we're in pages/ subfolder
+function isInPages() {
+  return window.location.pathname.includes('/pages/');
+}
+
+function resolveHref(href) {
+  if (isInPages()) {
+    if (href === 'index.html') return '../index.html';
+    if (href.startsWith('pages/')) return href.replace('pages/', '');
+    return href;
+  }
+  return href;
+}
+
+function renderLayout(pageTitle, activeKey) {
+  const user = getCurrentUser();
+  if (!user) {
+    window.location.href = isInPages() ? '../login.html' : 'login.html';
+    return;
+  }
+
+  const roleId = user.roleId;
+  const navItems = getNavConfig(roleId);
+  const roleName = getRoleName(roleId);
+  const pillClass = getRolePillClass(roleId);
+
+  let navHtml = '';
+  for (const item of navItems) {
+    if (item.section) {
+      navHtml += `<div class="nav-section">${item.section}</div>`;
+    } else {
+      const active = item.key === activeKey ? 'active' : '';
+      navHtml += `<a class="nav-item ${active}" href="${resolveHref(item.href)}">${ICONS[item.icon]} ${item.label}</a>`;
+    }
+  }
+
+  const loginHref = isInPages() ? '../login.html' : 'login.html';
+
+  document.body.innerHTML = `
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-mark">${ICONS.logo}</div>
+          <div>
+            <div class="brand-name">Атлетика</div>
+            <div class="brand-sub">CRM Система</div>
           </div>
         </div>
-      </div>
+
+        <div class="role-pill ${pillClass}">
+          <span class="role-dot"></span>
+          ${roleName}
+        </div>
+
+        <nav class="sidebar-nav">${navHtml}</nav>
+
+        <div class="sidebar-footer">
+          <div class="user-block">
+            <div class="user-ava">${getInitials(user.fullName)}</div>
+            <div>
+              <div class="user-name-sm">${user.fullName}</div>
+              <div class="user-role-sm">${user.email}</div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="doLogout()">
+            ${ICONS.logout} Выйти
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content" id="pageContent"></main>
     </div>
-  `);
+  `;
+
+  // Set page title
+  document.title = pageTitle + ' — Атлетика CRM';
+
+  window.doLogout = function() {
+    localStorage.removeItem('fc_user');
+    window.location.href = loginHref;
+  };
+}
+
+// Access guard — call at top of page with required role IDs
+// e.g. requireRole([1]) means admin only
+function requireRole(allowedRoles) {
+  const user = getCurrentUser();
+  if (!user) {
+    window.location.href = isInPages() ? '../login.html' : 'login.html';
+    return false;
+  }
+  if (!allowedRoles.includes(user.roleId)) {
+    const content = document.getElementById('pageContent');
+    if (content) {
+      content.innerHTML = `
+        <div class="access-denied">
+          <div class="access-denied-icon">${ICONS.lock}</div>
+          <h3>Нет доступа</h3>
+          <p>У вас нет прав для просмотра этого раздела.</p>
+        </div>
+      `;
+    }
+    return false;
+  }
+  return true;
+}
+
+// Modal helper
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
 }
