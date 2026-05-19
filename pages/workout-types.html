@@ -18,8 +18,22 @@ renderLayout('Типы тренировок', 'workout-types');
   <div class="modal-box">
     <div class="modal-title" id="modalTitle">Добавить тип тренировки</div>
     <input type="hidden" id="mId"/>
-    <div class="form-group"><label class="form-label">Название / уровень</label><input type="text" class="form-control" id="mName" placeholder="Например: Силовая, Кардио, Йога"/></div>
-    <div class="form-group"><label class="form-label">Тренер</label><select class="form-control" id="mTrainer"></select></div>
+    <div class="form-group">
+      <label class="form-label">Название</label>
+      <input type="text" class="form-control" id="mName" placeholder="Например: Силовая, Кардио, Йога"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Уровень сложности</label>
+      <select class="form-control" id="mLevel">
+        <option value="1">1 — Начинающий</option>
+        <option value="2">2 — Средний</option>
+        <option value="3">3 — Продвинутый</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Тренер</label>
+      <select class="form-control" id="mTrainer"></select>
+    </div>
     <div class="modal-footer">
       <button class="btn-outline" onclick="closeModal('modal')">Отмена</button>
       <button class="btn-modal-save" onclick="saveType()">Сохранить</button>
@@ -47,26 +61,45 @@ content.innerHTML = `
       <div class="table-card-title"><span class="title-dot" style="background:var(--purple)"></span>Список типов</div>
     </div>
     <table class="fc-table">
-      <thead><tr><th>#</th><th>Название</th><th>Тренер</th>${canEdit ? '<th>Действия</th>' : ''}</tr></thead>
-      <tbody id="tbody"><tr><td colspan="${canEdit ? 4 : 3}"><div class="loading-row"><span class="spinner"></span> Загрузка</div></td></tr></tbody>
+      <thead><tr><th>#</th><th>Название</th><th>Уровень</th><th>Тренер</th>${canEdit ? '<th>Действия</th>' : ''}</tr></thead>
+      <tbody id="tbody"><tr><td colspan="${canEdit ? 5 : 4}"><div class="loading-row"><span class="spinner"></span> Загрузка</div></td></tr></tbody>
     </table>
   </div>
 `;
+
+// Название хранится отдельно в localStorage, т.к. в БД только число
+// Ключ: wt_name_{id}
+function saveName(id, name) { localStorage.setItem('wt_name_' + id, name); }
+function getName(id, lvl) { return localStorage.getItem('wt_name_' + id) || levelLabel(lvl); }
+
+function levelLabel(lvl) {
+  return { 1: 'Начинающий', 2: 'Средний', 3: 'Продвинутый' }[lvl] || ('Уровень ' + lvl);
+}
+
+function levelBadge(lvl) {
+  const cls = { 1: 'badge-green', 2: 'badge-yellow', 3: 'badge-red' }[lvl] || 'badge-gray';
+  return `<span class="badge ${cls}">${lvl} — ${levelLabel(lvl)}</span>`;
+}
 
 let allTypes = [], trainers = [];
 
 async function loadTypes() {
   try {
-    allTypes = await api.get('/workouttypes');
+    // Пробуем разные варианты эндпоинта
+    let data;
+    for (const path of ['/workoutstype', '/workouttype', '/workouttypes', '/workoutTypes']) {
+      try { data = await api.get(path); if (data) break; } catch(e) {}
+    }
+    allTypes = data || [];
     renderTable();
   } catch(e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки. Проверьте что API запущен.</td></tr>`;
   }
 }
 
 function renderTable() {
   const tbody = document.getElementById('tbody');
-  const cols = canEdit ? 4 : 3;
+  const cols = canEdit ? 5 : 4;
   if (!allTypes.length) {
     tbody.innerHTML = `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div><p>Типы не найдены</p></div></td></tr>`;
     return;
@@ -74,8 +107,9 @@ function renderTable() {
   tbody.innerHTML = allTypes.map((t, i) => `
     <tr>
       <td class="muted">${i + 1}</td>
-      <td><strong>${t.workoutTypeLvl || t.name || '—'}</strong></td>
-      <td class="muted">${t.trainerName || t.userId || '—'}</td>
+      <td><strong>${getName(t.id, t.workoutTypeLvl)}</strong></td>
+      <td>${levelBadge(t.workoutTypeLvl)}</td>
+      <td class="muted">${t.trainerName || t.userName || t.userId || '—'}</td>
       ${canEdit ? `<td>
         <button class="btn-icon" onclick='openEdit(${JSON.stringify(t)})' title="Редактировать">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -89,7 +123,10 @@ function renderTable() {
 }
 
 async function loadTrainers() {
-  if (!trainers.length) { const all = await api.get('/users'); trainers = all.filter(u => u.roleId === 2); }
+  if (!trainers.length) {
+    const all = await api.get('/users');
+    trainers = all.filter(u => u.roleId === 2);
+  }
   document.getElementById('mTrainer').innerHTML = trainers.map(t => `<option value="${t.id}">${t.fullName}</option>`).join('');
 }
 
@@ -97,6 +134,7 @@ async function openAdd() {
   document.getElementById('modalTitle').textContent = 'Добавить тип тренировки';
   document.getElementById('mId').value = '';
   document.getElementById('mName').value = '';
+  document.getElementById('mLevel').value = '1';
   await loadTrainers();
   openModal('modal');
 }
@@ -104,32 +142,54 @@ async function openAdd() {
 async function openEdit(t) {
   document.getElementById('modalTitle').textContent = 'Редактировать тип';
   document.getElementById('mId').value = t.id;
-  document.getElementById('mName').value = t.workoutTypeLvl || t.name || '';
+  document.getElementById('mName').value = getName(t.id, t.workoutTypeLvl);
+  document.getElementById('mLevel').value = t.workoutTypeLvl || 1;
   await loadTrainers();
   document.getElementById('mTrainer').value = t.userId;
   openModal('modal');
 }
 
+let lastEndpoint = '/workoutstype';
+
 async function saveType() {
   const id = document.getElementById('mId').value;
-  const nameVal = document.getElementById('mName').value.trim();
+  const name = document.getElementById('mName').value.trim();
+  const lvl  = parseInt(document.getElementById('mLevel').value);
   const body = {
-    workoutTypeLvl: parseInt(nameVal) || 1,  // если текст — ставим 1
+    workoutTypeLvl: lvl,
     userId: parseInt(document.getElementById('mTrainer').value)
   };
-  if (!nameVal) { alert('Введите название'); return; }
-  try {
-    if (id) await api.put('/workoutstype/' + id, body);
-    else await api.post('/workoutstype', body);
+  if (!name) { alert('Введите название'); return; }
+
+  // Пробуем разные эндпоинты
+  const endpoints = ['/workoutstype', '/workouttype', '/workouttypes'];
+  let saved = false;
+  for (const ep of endpoints) {
+    try {
+      if (id) await api.put(ep + '/' + id, body);
+      else { const res = await api.post(ep, body); if (res?.id) saveName(res.id, name); }
+      lastEndpoint = ep;
+      saved = true;
+      break;
+    } catch(e) { continue; }
+  }
+
+  if (saved) {
+    if (id) saveName(parseInt(id), name);
     closeModal('modal');
     loadTypes();
-  } catch(e) { alert('Ошибка: ' + e.message); }
+  } else {
+    alert('Ошибка сохранения. Проверьте Swagger — как называется эндпоинт для типов тренировок?');
+  }
 }
 
 async function deleteType(id) {
   if (!confirm('Удалить тип тренировки?')) return;
-  try { await api.delete('/workouttypse/' + id); loadTypes(); }
-  catch(e) { alert('Ошибка: ' + e.message); }
+  const endpoints = ['/workoutstype', '/workouttype', '/workouttypes'];
+  for (const ep of endpoints) {
+    try { await api.delete(ep + '/' + id); loadTypes(); return; } catch(e) {}
+  }
+  alert('Ошибка удаления');
 }
 
 loadTypes();
