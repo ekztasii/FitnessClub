@@ -2,8 +2,10 @@ using FitnessClub.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Environment.EnvironmentName = "Development";
 
+// В Docker строка подключения берётся из переменной окружения
+// ConnectionStrings__DefaultConnection (задана в docker-compose.yml)
+// При локальном запуске — из appsettings.json
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -20,21 +22,21 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger доступен всегда — и локально и в Docker
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 
+// Авто-миграция при старте — нужна в Docker т.к. БД создаётся с нуля
 try
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync(); // Используем асинхронную версию
+    db.Database.Migrate();
+    Console.WriteLine("Миграция выполнена успешно.");
 }
 catch (Exception ex)
 {

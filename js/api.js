@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:5000/api';
+// Docker:          порт 8080  (docker-compose up --build)
+// Visual Studio:   порт 5000  (F5 в Visual Studio)
+const API_BASE = 'http://localhost:8080/api';
 
 const api = {
   async get(path) {
