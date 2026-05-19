@@ -57,7 +57,7 @@ let allTypes = [], trainers = [];
 
 async function loadTypes() {
   try {
-    allTypes = await api.get('/workoutstype');
+    allTypes = await api.get('/workouttypes');
     renderTable();
   } catch(e) {
     document.getElementById('tbody').innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
@@ -118,8 +118,8 @@ async function saveType() {
   };
   if (!body.workoutTypeLvl) { alert('Введите название'); return; }
   try {
-    if (id) await api.put('/workoutstype/' + id, body);
-    else await api.post('/workoutstype', body);
+    if (id) await api.put('/workouttypes/' + id, body);
+    else await api.post('/workouttypes', body);
     closeModal('modal');
     loadTypes();
   } catch(e) { alert('Ошибка: ' + e.message); }
@@ -127,7 +127,7 @@ async function saveType() {
 
 async function deleteType(id) {
   if (!confirm('Удалить тип тренировки?')) return;
-  try { await api.delete('/workoutstype/' + id); loadTypes(); }
+  try { await api.delete('/workouttypse/' + id); loadTypes(); }
   catch(e) { alert('Ошибка: ' + e.message); }
 }
 
