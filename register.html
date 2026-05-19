@@ -4,104 +4,142 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Регистрация — Атлетика CRM</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="css/style.css"/>
-  <style>
-    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); padding:24px 0; }
-    .auth-card { background:#fff; border-radius:20px; padding:40px; width:100%; max-width:460px; box-shadow:0 24px 60px rgba(0,0,0,.3); }
-    .auth-logo { text-align:center; margin-bottom:24px; }
-    .auth-logo .logo-icon { width:56px;height:56px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:1.7rem;margin-bottom:10px; }
-    .auth-logo h2 { font-family:Montserrat,sans-serif;font-weight:800;font-size:1.4rem;margin:0; }
-    .auth-logo p { color:var(--text-muted);font-size:.83rem;margin:4px 0 0; }
-    .btn-auth { width:100%;padding:12px;border-radius:10px;font-weight:700;font-size:1rem;border:none;background:var(--primary);color:#fff;cursor:pointer;transition:background .2s; }
-    .btn-auth:hover { background:var(--primary-dark); }
-    .role-card { border:2px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:10px; }
-    .role-card:hover { border-color:var(--primary);background:#f0f7ff; }
-    .role-card.selected { border-color:var(--primary);background:#dbeafe; }
-    .role-card .role-icon { font-size:1.4rem; }
-    .role-card .role-label { font-weight:600;font-size:.88rem; }
-    .role-card .role-desc { font-size:.75rem;color:var(--text-muted); }
-  </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/api.js"></script>
 
-<div class="auth-card">
-  <div class="auth-logo">
-    <div class="logo-icon">🏋️</div>
-    <h2>Регистрация</h2>
-    <p>Создайте аккаунт в системе «Атлетика»</p>
-  </div>
-
-  <div id="errorAlert" class="alert alert-danger d-none py-2 px-3 mb-3" style="font-size:.85rem"></div>
-  <div id="successAlert" class="alert alert-success d-none py-2 px-3 mb-3" style="font-size:.85rem"></div>
-
-  <!-- Выбор роли -->
-  <div class="mb-3">
-    <label class="form-label">Тип аккаунта *</label>
-    <div class="d-flex flex-column gap-2">
-      <div class="role-card selected" onclick="selectRole(3, this)" id="roleCard3">
-        <span class="role-icon">👤</span>
-        <div><div class="role-label">Клиент</div><div class="role-desc">Запись на тренировки, просмотр абонемента</div></div>
+<div class="auth-wrap">
+  <div class="auth-box auth-box-wide">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+          <line x1="6" y1="1" x2="6" y2="4"/>
+          <line x1="10" y1="1" x2="10" y2="4"/>
+          <line x1="14" y1="1" x2="14" y2="4"/>
+        </svg>
       </div>
-      <div class="role-card" onclick="selectRole(2, this)" id="roleCard2">
-        <span class="role-icon">💪</span>
-        <div><div class="role-label">Тренер</div><div class="role-desc">Просмотр расписания и списка записей</div></div>
+      <div class="auth-title">Регистрация</div>
+      <div class="auth-sub">Создайте аккаунт в системе «Атлетика»</div>
+    </div>
+
+    <div id="errAlert"  class="alert alert-error   d-none"></div>
+    <div id="succAlert" class="alert alert-success d-none"></div>
+
+    <!-- Тип аккаунта -->
+    <div class="form-group">
+      <label class="form-label">Тип аккаунта</label>
+      <div class="role-options">
+
+        <div class="role-opt active" id="opt3" onclick="selectRole(3)">
+          <div class="role-opt-icon client">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div>
+            <div class="role-opt-name">Клиент</div>
+            <div class="role-opt-desc">Запись на тренировки, просмотр абонемента</div>
+          </div>
+        </div>
+
+        <div class="role-opt" id="opt2" onclick="selectRole(2)">
+          <div class="role-opt-icon trainer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21a9 9 0 0 1 18 0"/></svg>
+          </div>
+          <div>
+            <div class="role-opt-name">Тренер</div>
+            <div class="role-opt-desc">Просмотр расписания и управление тренировками</div>
+          </div>
+        </div>
+
+        <div class="role-opt" id="opt1" onclick="selectRole(1)">
+          <div class="role-opt-icon admin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          </div>
+          <div>
+            <div class="role-opt-name">Администратор</div>
+            <div class="role-opt-desc">Полный доступ к системе управления</div>
+          </div>
+        </div>
+
       </div>
-      <div class="role-card" onclick="selectRole(1, this)" id="roleCard1">
-        <span class="role-icon">⚙️</span>
-        <div><div class="role-label">Администратор</div><div class="role-desc">Полный доступ к системе</div></div>
+    </div>
+
+    <!-- Код сотрудника (скрыт по умолчанию) -->
+    <div class="staff-code-wrap" id="staffCodeWrap">
+      <div class="form-group">
+        <label class="form-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:4px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Код сотрудника
+        </label>
+        <input type="password" class="form-control" id="fStaffCode" placeholder="Введите секретный код"/>
+        <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">
+          Для регистрации как тренер или администратор необходим специальный код. Получите его у руководства клуба.
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="mb-3">
-    <label class="form-label">ФИО *</label>
-    <input type="text" class="form-control" id="fFullName" placeholder="Иванов Иван Иванович"/>
-  </div>
-
-  <div class="row g-2 mb-3">
-    <div class="col-6">
-      <label class="form-label">Телефон</label>
-      <input type="text" class="form-control" id="fPhone" placeholder="+7 999 000 00 00"/>
+    <!-- Данные -->
+    <div class="form-group">
+      <label class="form-label">ФИО</label>
+      <input type="text" class="form-control" id="fFullName" placeholder="Иванов Иван Иванович"/>
     </div>
-    <div class="col-6">
-      <label class="form-label">Email *</label>
-      <input type="email" class="form-control" id="fEmail" placeholder="ivan@mail.ru"/>
-    </div>
-  </div>
 
-  <div class="row g-2 mb-4">
-    <div class="col-6">
-      <label class="form-label">Пароль *</label>
-      <input type="password" class="form-control" id="fPassword" placeholder="Минимум 6 символов"/>
+    <div class="form-row" style="margin-bottom:16px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Телефон</label>
+        <input type="text" class="form-control" id="fPhone" placeholder="+7 999 000 00 00"/>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="fEmail" placeholder="ivan@mail.ru"/>
+      </div>
     </div>
-    <div class="col-6">
-      <label class="form-label">Повторите пароль *</label>
-      <input type="password" class="form-control" id="fPassword2" placeholder="••••••••"/>
+
+    <div class="form-row" style="margin-bottom:22px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Пароль</label>
+        <input type="password" class="form-control" id="fPassword" placeholder="Минимум 6 символов"/>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Повторите пароль</label>
+        <input type="password" class="form-control" id="fPassword2" placeholder="••••••••"/>
+      </div>
     </div>
-  </div>
 
-  <button class="btn-auth" id="regBtn" onclick="doRegister()">Зарегистрироваться</button>
+    <button class="btn-primary" id="regBtn" onclick="doRegister()">Зарегистрироваться</button>
 
-  <div class="text-center mt-3" style="font-size:.85rem">
-    Уже есть аккаунт? <a href="login.html" style="color:var(--primary);font-weight:600">Войти</a>
+    <div class="auth-link">
+      Уже есть аккаунт? <a href="login.html">Войти</a>
+    </div>
   </div>
 </div>
 
 <script>
+// СЕКРЕТНЫЙ КОД СОТРУДНИКОВ — поменяй на свой!
+const STAFF_CODE = 'atletika2026';
+
 let selectedRole = 3;
 
-function selectRole(roleId, el) {
+function selectRole(roleId) {
   selectedRole = roleId;
-  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
+  document.querySelectorAll('.role-opt').forEach(el => el.classList.remove('active'));
+  document.getElementById('opt' + roleId).classList.add('active');
+
+  // Показываем поле кода только для тренера и администратора
+  const wrap = document.getElementById('staffCodeWrap');
+  if (roleId === 1 || roleId === 2) {
+    wrap.classList.add('show');
+  } else {
+    wrap.classList.remove('show');
+    document.getElementById('fStaffCode').value = '';
+  }
 }
 
 async function doRegister() {
-  const errEl  = document.getElementById('errorAlert');
-  const succEl = document.getElementById('successAlert');
+  const errEl  = document.getElementById('errAlert');
+  const succEl = document.getElementById('succAlert');
   const btn    = document.getElementById('regBtn');
 
   errEl.classList.add('d-none');
@@ -112,14 +150,21 @@ async function doRegister() {
   const phone     = document.getElementById('fPhone').value.trim();
   const password  = document.getElementById('fPassword').value;
   const password2 = document.getElementById('fPassword2').value;
+  const staffCode = document.getElementById('fStaffCode').value.trim();
 
-  if (!fullName) { showErr('Введите ФИО'); return; }
-  if (!email)    { showErr('Введите email'); return; }
-  if (!password) { showErr('Введите пароль'); return; }
+  if (!fullName)    { showErr('Введите ФИО'); return; }
+  if (!email)       { showErr('Введите email'); return; }
+  if (!password)    { showErr('Введите пароль'); return; }
   if (password.length < 6) { showErr('Пароль должен быть не менее 6 символов'); return; }
   if (password !== password2) { showErr('Пароли не совпадают'); return; }
 
-  btn.textContent = '⏳ Регистрация...';
+  // Проверка кода сотрудника
+  if ((selectedRole === 1 || selectedRole === 2) && staffCode !== STAFF_CODE) {
+    showErr('Неверный код сотрудника. Обратитесь к администрации клуба.');
+    return;
+  }
+
+  btn.textContent = 'Регистрация...';
   btn.disabled = true;
 
   try {
@@ -131,10 +176,9 @@ async function doRegister() {
       password
     });
 
-    succEl.textContent = '✓ Аккаунт успешно создан! Перенаправление на вход...';
+    succEl.textContent = 'Аккаунт успешно создан. Перенаправление...';
     succEl.classList.remove('d-none');
 
-    // Сохраняем и редиректим
     localStorage.setItem('fc_user', JSON.stringify({
       id: user.id,
       fullName: user.fullName,
@@ -143,17 +187,17 @@ async function doRegister() {
       roleName: user.roleName
     }));
 
-    setTimeout(() => window.location.href = 'index.html', 1500);
+    setTimeout(() => window.location.href = 'index.html', 1200);
 
   } catch(e) {
-    showErr('Ошибка регистрации. Возможно, такой email уже существует.');
+    showErr('Ошибка регистрации. Возможно, такой email уже занят.');
     btn.textContent = 'Зарегистрироваться';
     btn.disabled = false;
   }
 }
 
 function showErr(msg) {
-  const el = document.getElementById('errorAlert');
+  const el = document.getElementById('errAlert');
   el.textContent = msg;
   el.classList.remove('d-none');
 }
