@@ -2,6 +2,7 @@ using FitnessClub.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Environment.EnvironmentName = "Development";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -11,7 +12,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "FitnessClub API", Version = "v1" }));
 
-// ← CORS: разрешаем запросы от frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -20,11 +20,25 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-app.UseCors("AllowAll");   // ← эта строка должна быть перед UseAuthorization
+app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
+
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync(); // Используем асинхронную версию
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Миграция пропущена: {ex.Message}");
+}
 
 app.Run();

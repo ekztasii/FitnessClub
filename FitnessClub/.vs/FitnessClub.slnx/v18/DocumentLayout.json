@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\letli\\Desktop\\\u0424\u0430\u0439\u043B\u044B \u043A\u0443\u0440\u0441\u043E\u0432\u043E\u0439\\FitnessClub\\FitnessClub\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\letli\\Desktop\\\u0424\u0430\u0439\u043B\u044B \u043A\u0443\u0440\u0441\u043E\u0432\u043E\u0439\\FitnessClub\\FitnessClub\\Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\letli\\Desktop\\\u0424\u0430\u0439\u043B\u044B \u043A\u0443\u0440\u0441\u043E\u0432\u043E\u0439\\FitnessClub\\FitnessClub\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\letli\\Desktop\\\u0424\u0430\u0439\u043B\u044B \u043A\u0443\u0440\u0441\u043E\u0432\u043E\u0439\\FitnessClub\\FitnessClub\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\Users\\letli\\Desktop\\\u0424\u0430\u0439\u043B\u044B \u043A\u0443\u0440\u0441\u043E\u0432\u043E\u0439\\FitnessClub\\FitnessClub\\appsettings.json*",
+              "RelativeToolTip": "appsettings.json*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-05-18T15:45:11Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\letli\\Desktop\\\u0424\u0430\u0439\u043B\u044B \u043A\u0443\u0440\u0441\u043E\u0432\u043E\u0439\\FitnessClub\\FitnessClub\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\letli\\Desktop\\\u0424\u0430\u0439\u043B\u044B \u043A\u0443\u0440\u0441\u043E\u0432\u043E\u0439\\FitnessClub\\FitnessClub\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T15:44:14.086Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
