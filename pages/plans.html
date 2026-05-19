@@ -4,129 +4,134 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Планы абонементов — Атлетика CRM</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="../css/style.css"/>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/layout.js"></script>
-<script>if (!localStorage.getItem("fc_user")) { window.location.href = "../login.html"; }</script>
 <script>
+if (!localStorage.getItem('fc_user')) window.location.href = '../login.html';
 renderLayout('Планы абонементов', 'plans');
+</script>
 
-document.getElementById('pageContent').innerHTML = `
-  <div class="section-card">
-    <div class="section-card-header">
-      <h5>💳 Планы абонементов</h5>
-      <button class="btn-primary-fc" onclick="openModal()">+ Добавить план</button>
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Добавить план</div>
+    <input type="hidden" id="mId"/>
+    <div class="form-group"><label class="form-label">Название</label><input type="text" class="form-control" id="mName" placeholder="Например: Месячный стандарт"/></div>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Цена (руб.)</label><input type="number" class="form-control" id="mPrice" placeholder="2500" min="0"/></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Дней действия</label><input type="number" class="form-control" id="mDays" placeholder="30" min="1"/></div>
     </div>
-    <div class="section-card-body">
+    <div class="form-group" style="margin-top:16px"><label class="form-label">Разрешено посещений</label><input type="number" class="form-control" id="mVisits" placeholder="12" min="1"/></div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal')">Отмена</button>
+      <button class="btn-modal-save" onclick="savePlan()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if (!requireRole([1])) {} else {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Планы абонементов</div>
+        <div class="page-sub">Тарифы и условия посещения</div>
+      </div>
+      <button class="btn-add" onclick="openAdd()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Добавить план
+      </button>
+    </div>
+    <div class="table-card">
+      <div class="table-card-head">
+        <div class="table-card-title"><span class="title-dot" style="background:var(--yellow)"></span>Все тарифные планы</div>
+      </div>
       <table class="fc-table">
-        <thead><tr><th>#</th><th>Название</th><th>Цена</th><th>Срок (дней)</th><th>Посещений</th><th>Действия</th></tr></thead>
-        <tbody id="tableBody"><tr><td colspan="6"><div class="fc-loader"><div class="spinner"></div>Загрузка...</div></td></tr></tbody>
+        <thead><tr><th>#</th><th>Название</th><th>Цена</th><th>Дней</th><th>Посещений</th><th>Действия</th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="6"><div class="loading-row"><span class="spinner"></span> Загрузка</div></td></tr></tbody>
       </table>
     </div>
-  </div>
+  `;
+  loadPlans();
+}
 
-  <div class="modal fade" id="crudModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle">Добавить план</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3"><label class="form-label">Название *</label>
-            <input type="text" class="form-control" id="fName" placeholder='Например: "Месячный базовый"'></div>
-          <div class="row g-2">
-            <div class="col-6 mb-3"><label class="form-label">Цена (руб.) *</label>
-              <input type="number" class="form-control" id="fPrice" placeholder="2500" min="0"></div>
-            <div class="col-6 mb-3"><label class="form-label">Срок действия (дней) *</label>
-              <input type="number" class="form-control" id="fDays" placeholder="30" min="1"></div>
-          </div>
-          <div class="mb-3"><label class="form-label">Кол-во посещений *</label>
-            <input type="number" class="form-control" id="fVisits" placeholder="12" min="1"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
-          <button class="btn-primary-fc" id="saveBtn" onclick="saveItem()">💾 Сохранить</button>
-        </div>
-      </div>
-    </div>
-  </div>
-`;
+let allPlans = [];
 
-let allItems = [], editingId = null;
-
-async function loadData() {
+async function loadPlans() {
   try {
-    allItems = await api.get('/membershipplans');
-    renderTable(allItems);
+    allPlans = await api.get('/membershipplans');
+    renderTable();
   } catch(e) {
-    document.getElementById('tableBody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">⚠️</div><p>Ошибка загрузки</p></div></td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
   }
 }
 
-function renderTable(items) {
-  const tbody = document.getElementById('tableBody');
-  if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💳</div><p>Планы не найдены</p></div></td></tr>`;
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  if (!allPlans.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg></div><p>Планы не найдены</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = items.map((p,i) => `<tr>
-    <td class="text-muted">${i+1}</td>
-    <td><strong>${p.planName}</strong></td>
-    <td><span class="fw-bold" style="color:var(--success)">${Number(p.price).toLocaleString('ru-RU')} ₽</span></td>
-    <td>${p.validityDays} дн.</td>
-    <td>${p.allowedVisits} посещ.</td>
-    <td>
-      <button class="btn-icon edit me-1" onclick="openModal(${p.id})">✏️</button>
-      <button class="btn-icon del" onclick="deleteItem(${p.id},'${p.planName}')">🗑️</button>
-    </td>
-  </tr>`).join('');
+  tbody.innerHTML = allPlans.map((p, i) => `
+    <tr>
+      <td class="muted">${i + 1}</td>
+      <td><strong>${p.planName}</strong></td>
+      <td><span class="badge badge-yellow">${Number(p.price).toLocaleString('ru-RU')} ₽</span></td>
+      <td class="muted">${p.validityDays} дн.</td>
+      <td class="muted">${p.allowedVisits} посещ.</td>
+      <td>
+        <button class="btn-icon" onclick='openEdit(${JSON.stringify(p)})' title="Редактировать">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn-icon danger" onclick="deletePlan(${p.id})" title="Удалить">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </td>
+    </tr>
+  `).join('');
 }
 
-function openModal(id = null) {
-  editingId = id;
-  document.getElementById('modalTitle').textContent = id ? 'Редактировать план' : 'Добавить план';
-  if (id) {
-    const p = allItems.find(x => x.id === id);
-    document.getElementById('fName').value   = p.planName;
-    document.getElementById('fPrice').value  = p.price;
-    document.getElementById('fDays').value   = p.validityDays;
-    document.getElementById('fVisits').value = p.allowedVisits;
-  } else {
-    ['fName','fPrice','fDays','fVisits'].forEach(f => document.getElementById(f).value = '');
-  }
-  new bootstrap.Modal(document.getElementById('crudModal')).show();
+function openAdd() {
+  document.getElementById('modalTitle').textContent = 'Добавить план';
+  ['mId','mName','mPrice','mDays','mVisits'].forEach(id => document.getElementById(id).value = '');
+  openModal('modal');
 }
 
-async function saveItem() {
-  const planName     = document.getElementById('fName').value.trim();
-  const price        = +document.getElementById('fPrice').value;
-  const validityDays = +document.getElementById('fDays').value;
-  const allowedVisits = +document.getElementById('fVisits').value;
-  if (!planName || !price || !validityDays || !allowedVisits) { showToast('Заполните все поля','warning'); return; }
-  const btn = document.getElementById('saveBtn');
-  btn.textContent = '⏳...'; btn.disabled = true;
+function openEdit(p) {
+  document.getElementById('modalTitle').textContent = 'Редактировать план';
+  document.getElementById('mId').value = p.id;
+  document.getElementById('mName').value = p.planName;
+  document.getElementById('mPrice').value = p.price;
+  document.getElementById('mDays').value = p.validityDays;
+  document.getElementById('mVisits').value = p.allowedVisits;
+  openModal('modal');
+}
+
+async function savePlan() {
+  const id = document.getElementById('mId').value;
+  const body = {
+    planName: document.getElementById('mName').value.trim(),
+    price: parseFloat(document.getElementById('mPrice').value),
+    validityDays: parseInt(document.getElementById('mDays').value),
+    allowedVisits: parseInt(document.getElementById('mVisits').value)
+  };
+  if (!body.planName || isNaN(body.price)) { alert('Заполните все поля'); return; }
   try {
-    if (editingId) { await api.put(`/membershipplans/${editingId}`, { planName, price, validityDays, allowedVisits }); showToast('План обновлён'); }
-    else { await api.post('/membershipplans', { planName, price, validityDays, allowedVisits }); showToast('План добавлен'); }
-    bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
-    loadData();
-  } catch(e) { showToast('Ошибка сохранения','danger'); }
-  finally { btn.textContent = '💾 Сохранить'; btn.disabled = false; }
+    if (id) await api.put('/membershipplans/' + id, body);
+    else await api.post('/membershipplans', body);
+    closeModal('modal');
+    loadPlans();
+  } catch(e) { alert('Ошибка: ' + e.message); }
 }
 
-function deleteItem(id, name) {
-  confirmDelete(`Удалить план «${name}»?`, async () => {
-    try { await api.delete(`/membershipplans/${id}`); showToast('План удалён'); loadData(); }
-    catch(e) { showToast('Ошибка удаления','danger'); }
-  });
+async function deletePlan(id) {
+  if (!confirm('Удалить план?')) return;
+  try { await api.delete('/membershipplans/' + id); loadPlans(); }
+  catch(e) { alert('Ошибка: ' + e.message); }
 }
-
-loadData();
 </script>
 </body>
 </html>

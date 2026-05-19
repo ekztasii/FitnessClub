@@ -4,175 +4,178 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Тренировки — Атлетика CRM</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="../css/style.css"/>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/layout.js"></script>
-<script>if (!localStorage.getItem("fc_user")) { window.location.href = "../login.html"; }</script>
 <script>
+if (!localStorage.getItem('fc_user')) window.location.href = '../login.html';
 renderLayout('Тренировки', 'workouts');
+</script>
 
-document.getElementById('pageContent').innerHTML = `
-  <div class="d-flex gap-2 mb-3 align-items-center flex-wrap">
-    <button class="btn-primary-fc" onclick="openModal()">+ Добавить тренировку</button>
-    <button class="btn btn-outline-secondary btn-sm" onclick="loadAll()">Все тренировки</button>
-    <button class="btn btn-outline-primary btn-sm" onclick="loadUpcoming()">📅 Предстоящие</button>
-  </div>
-  <div class="section-card">
-    <div class="section-card-header">
-      <h5 id="tableTitle">🗓️ Все тренировки</h5>
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Поиск по типу/тренеру...">
-      </div>
-    </div>
-    <div class="section-card-body">
-      <table class="fc-table">
-        <thead><tr><th>#</th><th>Тип</th><th>Тренер</th><th>Дата и время</th><th>Участники</th><th>Действия</th></tr></thead>
-        <tbody id="tableBody"><tr><td colspan="6"><div class="fc-loader"><div class="spinner"></div>Загрузка...</div></td></tr></tbody>
-      </table>
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Добавить тренировку</div>
+    <input type="hidden" id="mId"/>
+    <div class="form-group"><label class="form-label">Тип тренировки</label><select class="form-control" id="mType"></select></div>
+    <div class="form-group"><label class="form-label">Тренер</label><select class="form-control" id="mTrainer"></select></div>
+    <div class="form-group"><label class="form-label">Дата и время</label><input type="datetime-local" class="form-control" id="mDate"/></div>
+    <div class="form-group"><label class="form-label">Макс. участников</label><input type="number" class="form-control" id="mMax" value="10" min="1"/></div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal')">Отмена</button>
+      <button class="btn-modal-save" onclick="saveWorkout()">Сохранить</button>
     </div>
   </div>
+</div>
 
-  <div class="modal fade" id="crudModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle">Добавить тренировку</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3"><label class="form-label">Тип тренировки *</label>
-            <select class="form-select" id="fType"><option value="">Загрузка...</option></select></div>
-          <div class="mb-3"><label class="form-label">Тренер *</label>
-            <select class="form-select" id="fTrainer"><option value="">Загрузка...</option></select></div>
-          <div class="mb-3"><label class="form-label">Дата и время *</label>
-            <input type="datetime-local" class="form-control" id="fDate"></div>
-          <div class="mb-3"><label class="form-label">Макс. участников *</label>
-            <input type="number" class="form-control" id="fMax" value="10" min="1" max="100"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
-          <button class="btn-primary-fc" id="saveBtn" onclick="saveItem()">💾 Сохранить</button>
-        </div>
-      </div>
+<script>
+const canEdit = isAdmin() || isTrainer();
+const content = document.getElementById('pageContent');
+
+content.innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Тренировки</div>
+      <div class="page-sub">${isClient() ? 'Расписание тренировок' : 'Управление расписанием'}</div>
     </div>
+    ${canEdit ? `<button class="btn-add" onclick="openAdd()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Добавить тренировку
+    </button>` : ''}
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabAll" onclick="switchTab('all')">Все тренировки</button>
+    <button class="tab-btn" id="tabUp" onclick="switchTab('upcoming')">Предстоящие</button>
+  </div>
+
+  <div class="table-card">
+    <div class="table-card-head">
+      <div class="table-card-title"><span class="title-dot" style="background:var(--yellow)"></span><span id="tableTitle">Все тренировки</span></div>
+      <input class="search-input" id="search" placeholder="Поиск по типу/тренеру..." oninput="filterTable()"/>
+    </div>
+    <table class="fc-table">
+      <thead><tr><th>#</th><th>Тип</th><th>Тренер</th><th>Дата и время</th><th>Участники</th>${canEdit ? '<th>Действия</th>' : ''}</tr></thead>
+      <tbody id="tbody"><tr><td colspan="${canEdit ? 6 : 5}"><div class="loading-row"><span class="spinner"></span> Загрузка</div></td></tr></tbody>
+    </table>
   </div>
 `;
 
-let allItems = [], allTypes = [], allTrainers = [], editingId = null;
+let allWorkouts = [], currentTab = 'all';
 
-async function loadAll() {
-  document.getElementById('tableTitle').textContent = '🗓️ Все тренировки';
-  document.getElementById('tableBody').innerHTML = `<tr><td colspan="6"><div class="fc-loader"><div class="spinner"></div>Загрузка...</div></td></tr>`;
+async function loadWorkouts() {
   try {
-    allItems = await api.get('/workouts');
-    renderTable(allItems);
-  } catch(e) { showToast('Ошибка загрузки','danger'); }
+    allWorkouts = await api.get('/workouts');
+    renderTable();
+  } catch(e) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
+  }
 }
 
-async function loadUpcoming() {
-  document.getElementById('tableTitle').textContent = '📅 Предстоящие тренировки';
-  document.getElementById('tableBody').innerHTML = `<tr><td colspan="6"><div class="fc-loader"><div class="spinner"></div>Загрузка...</div></td></tr>`;
-  try {
-    allItems = await api.get('/workouts/upcoming');
-    renderTable(allItems);
-  } catch(e) { showToast('Ошибка загрузки','danger'); }
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabAll').classList.toggle('active', tab === 'all');
+  document.getElementById('tabUp').classList.toggle('active', tab === 'upcoming');
+  document.getElementById('tableTitle').textContent = tab === 'upcoming' ? 'Предстоящие тренировки' : 'Все тренировки';
+  renderTable();
 }
 
-function renderTable(items) {
-  const tbody = document.getElementById('tableBody');
-  if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🗓️</div><p>Тренировки не найдены</p></div></td></tr>`;
+function renderTable() {
+  const q = (document.getElementById('search')?.value || '').toLowerCase();
+  let list = allWorkouts;
+  if (currentTab === 'upcoming') list = list.filter(w => new Date(w.workoutDate) > new Date());
+  if (q) list = list.filter(w => (w.workoutTypeName||'').toLowerCase().includes(q) || (w.trainerName||'').toLowerCase().includes(q));
+
+  const cols = canEdit ? 6 : 5;
+  const tbody = document.getElementById('tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><p>Тренировки не найдены</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = items.map((w,i) => {
-    const date = new Date(w.workoutDate);
-    const dateStr = date.toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    const pct = w.maxParticipants > 0 ? Math.round(w.currentParticipants/w.maxParticipants*100) : 0;
-    const color = pct >= 100 ? 'danger' : pct >= 70 ? 'warning' : 'success';
+  tbody.innerHTML = list.map((w, i) => {
+    const past = new Date(w.workoutDate) < new Date();
     return `<tr>
-      <td class="text-muted">${i+1}</td>
-      <td><strong>${w.workoutTypeName}</strong></td>
-      <td>${w.trainerName}</td>
-      <td>${dateStr}</td>
+      <td class="muted">${i + 1}</td>
+      <td><strong>${w.workoutTypeName || '—'}</strong></td>
+      <td class="muted">${w.trainerName || '—'}</td>
+      <td class="muted">${fmtDate(w.workoutDate)}</td>
       <td>
-        <div class="d-flex align-items-center gap-2">
-          <span>${w.currentParticipants}/${w.maxParticipants}</span>
-          <div style="width:60px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:var(--${color === 'success' ? 'success' : color === 'warning' ? 'accent' : 'danger'})"></div>
-          </div>
-        </div>
+        <span class="badge ${past ? 'badge-gray' : 'badge-blue'}">${w.currentParticipants ?? 0} / ${w.maxParticipants}</span>
       </td>
-      <td>
-        <button class="btn-icon edit me-1" onclick="openModal(${w.id})">✏️</button>
-        <button class="btn-icon del" onclick="deleteItem(${w.id})">🗑️</button>
-      </td>
+      ${canEdit ? `<td>
+        <button class="btn-icon" onclick='openEdit(${JSON.stringify(w)})' title="Редактировать">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn-icon danger" onclick="deleteWorkout(${w.id})" title="Удалить">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </td>` : ''}
     </tr>`;
   }).join('');
 }
 
-async function init() {
+function filterTable() { renderTable(); }
+
+let workoutTypes = [], trainers = [];
+
+async function openAdd() {
+  document.getElementById('modalTitle').textContent = 'Добавить тренировку';
+  document.getElementById('mId').value = '';
+  document.getElementById('mMax').value = '10';
+  document.getElementById('mDate').value = '';
+  await loadSelects();
+  openModal('modal');
+}
+
+async function openEdit(w) {
+  document.getElementById('modalTitle').textContent = 'Редактировать тренировку';
+  document.getElementById('mId').value = w.id;
+  document.getElementById('mMax').value = w.maxParticipants;
+  const d = new Date(w.workoutDate);
+  document.getElementById('mDate').value = d.toISOString().slice(0,16);
+  await loadSelects();
+  document.getElementById('mType').value = w.workoutTypeId;
+  document.getElementById('mTrainer').value = w.trainerId || w.userId;
+  openModal('modal');
+}
+
+async function loadSelects() {
+  if (!workoutTypes.length) workoutTypes = await api.get('/workoutstype');
+  if (!trainers.length) { const all = await api.get('/users'); trainers = all.filter(u => u.roleId === 2); }
+  document.getElementById('mType').innerHTML = workoutTypes.map(t => `<option value="${t.id}">${t.workoutTypeLvl || t.name || 'Тип ' + t.id}</option>`).join('');
+  document.getElementById('mTrainer').innerHTML = trainers.map(t => `<option value="${t.id}">${t.fullName}</option>`).join('');
+}
+
+async function saveWorkout() {
+  const id = document.getElementById('mId').value;
+  const body = {
+    workoutTypeId: parseInt(document.getElementById('mType').value),
+    userId: parseInt(document.getElementById('mTrainer').value),
+    workoutDate: document.getElementById('mDate').value,
+    maxParticipants: parseInt(document.getElementById('mMax').value)
+  };
+  if (!body.workoutDate) { alert('Укажите дату'); return; }
   try {
-    [allTypes, allTrainers, allItems] = await Promise.all([api.get('/workouttypes'), api.get('/users/by-role/2'), api.get('/workouts')]);
-    document.getElementById('fType').innerHTML    = allTypes.map(t => `<option value="${t.id}">${t.typeName}</option>`).join('');
-    document.getElementById('fTrainer').innerHTML = allTrainers.map(t => `<option value="${t.id}">${t.fullName}</option>`).join('');
-    renderTable(allItems);
-  } catch(e) {
-    document.getElementById('tableBody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">⚠️</div><p>Ошибка загрузки. Проверьте API.</p></div></td></tr>`;
-  }
+    if (id) await api.put('/workouts/' + id, body);
+    else await api.post('/workouts', body);
+    closeModal('modal');
+    loadWorkouts();
+  } catch(e) { alert('Ошибка: ' + e.message); }
 }
 
-function openModal(id = null) {
-  editingId = id;
-  document.getElementById('modalTitle').textContent = id ? 'Редактировать тренировку' : 'Добавить тренировку';
-  if (id) {
-    const w = allItems.find(x => x.id === id);
-    document.getElementById('fType').value    = w.workoutTypeId;
-    document.getElementById('fTrainer').value = w.userId;
-    const d = new Date(w.workoutDate);
-    document.getElementById('fDate').value = d.toISOString().slice(0,16);
-    document.getElementById('fMax').value  = w.maxParticipants;
-  } else {
-    document.getElementById('fDate').value = '';
-    document.getElementById('fMax').value  = '10';
-  }
-  new bootstrap.Modal(document.getElementById('crudModal')).show();
+async function deleteWorkout(id) {
+  if (!confirm('Удалить тренировку?')) return;
+  try { await api.delete('/workouts/' + id); loadWorkouts(); }
+  catch(e) { alert('Ошибка: ' + e.message); }
 }
 
-async function saveItem() {
-  const workoutTypeId = +document.getElementById('fType').value;
-  const userId        = +document.getElementById('fTrainer').value;
-  const workoutDate   = document.getElementById('fDate').value;
-  const maxParticipants = +document.getElementById('fMax').value;
-  if (!workoutDate) { showToast('Укажите дату','warning'); return; }
-  const btn = document.getElementById('saveBtn');
-  btn.textContent = '⏳...'; btn.disabled = true;
-  try {
-    if (editingId) { await api.put(`/workouts/${editingId}`, { workoutTypeId, userId, workoutDate, maxParticipants }); showToast('Тренировка обновлена'); }
-    else { await api.post('/workouts', { workoutTypeId, userId, workoutDate, maxParticipants }); showToast('Тренировка добавлена'); }
-    bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
-    init();
-  } catch(e) { showToast('Ошибка сохранения','danger'); }
-  finally { btn.textContent = '💾 Сохранить'; btn.disabled = false; }
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
-function deleteItem(id) {
-  confirmDelete('Удалить тренировку?', async () => {
-    try { await api.delete(`/workouts/${id}`); showToast('Тренировка удалена'); init(); }
-    catch(e) { showToast('Ошибка удаления','danger'); }
-  });
-}
-
-document.getElementById('searchInput').addEventListener('input', e => {
-  const q = e.target.value.toLowerCase();
-  renderTable(allItems.filter(w => w.workoutTypeName.toLowerCase().includes(q) || w.trainerName.toLowerCase().includes(q)));
-});
-
-init();
+loadWorkouts();
 </script>
 </body>
 </html>
