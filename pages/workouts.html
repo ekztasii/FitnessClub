@@ -141,9 +141,9 @@ async function openEdit(w) {
 }
 
 async function loadSelects() {
-  if (!workoutTypes.length) workoutTypes = await api.get('/workoutstype');
+  if (!workoutTypes.length) workoutTypes = await api.get('/WorkoutTypes');
   if (!trainers.length) { const all = await api.get('/users'); trainers = all.filter(u => u.roleId === 2); }
-  document.getElementById('mType').innerHTML = workoutTypes.map(t => `<option value="${t.id}">${t.workoutTypeLvl || t.name || 'Тип ' + t.id}</option>`).join('');
+  document.getElementById('mType').innerHTML = workoutTypes.map(t => `<option value="${t.id}">${t.typeName || t.workoutTypeLvl || 'Тип ' + t.id}</option>`).join('');
   document.getElementById('mTrainer').innerHTML = trainers.map(t => `<option value="${t.id}">${t.fullName}</option>`).join('');
 }
 
