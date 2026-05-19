@@ -112,14 +112,15 @@ async function openEdit(t) {
 
 async function saveType() {
   const id = document.getElementById('mId').value;
+  const nameVal = document.getElementById('mName').value.trim();
   const body = {
-    workoutTypeLvl: document.getElementById('mName').value.trim(),
+    workoutTypeLvl: parseInt(nameVal) || 1,  // если текст — ставим 1
     userId: parseInt(document.getElementById('mTrainer').value)
   };
-  if (!body.workoutTypeLvl) { alert('Введите название'); return; }
+  if (!nameVal) { alert('Введите название'); return; }
   try {
-    if (id) await api.put('/workouttypes/' + id, body);
-    else await api.post('/workouttypes', body);
+    if (id) await api.put('/workoutstype/' + id, body);
+    else await api.post('/workoutstype', body);
     closeModal('modal');
     loadTypes();
   } catch(e) { alert('Ошибка: ' + e.message); }
