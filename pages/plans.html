@@ -72,21 +72,23 @@ async function loadPlans() {
 function renderTable() {
   const tbody = document.getElementById('tbody');
   if (!allPlans.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg></div><p>Планы не найдены</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+      <div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div>
+      <p>Планы не найдены</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = allPlans.map((p, i) => `
     <tr>
-      <td class="muted">${i + 1}</td>
+      <td class="muted">${i+1}</td>
       <td><strong>${p.planName}</strong></td>
       <td><span class="badge badge-yellow">${Number(p.price).toLocaleString('ru-RU')} ₽</span></td>
       <td class="muted">${p.validityDays} дн.</td>
       <td class="muted">${p.allowedVisits} посещ.</td>
-      <td>
+      <td style="display:flex;gap:4px">
         <button class="btn-icon" onclick='openEdit(${JSON.stringify(p)})' title="Редактировать">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="btn-icon danger" onclick="deletePlan(${p.id})" title="Удалить">
+        <button class="btn-icon danger" onclick="deletePlan(${p.id}, '${p.planName.replace(/'/g,'')}')" title="Удалить">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </td>
@@ -127,38 +129,38 @@ async function savePlan() {
   } catch(e) { alert('Ошибка: ' + e.message); }
 }
 
-
-function showDeleteError(hint) {
-  const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
-  box.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:28px;max-width:420px;width:100%">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <div style="width:36px;height:36px;background:var(--red-dim);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      </div>
-      <div style="font-family:Syne,sans-serif;font-size:16px;font-weight:700;color:var(--text)">Невозможно удалить</div>
-    </div>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.6">${hint}</p>
-    <button onclick="this.closest('[style*=position]').remove()" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Понятно</button>
-  </div>`;
-  document.body.appendChild(box);
-}
-
-function isConstraintError(msg) {
-  return msg.includes('REFERENCE') || msg.includes('conflict') || msg.includes('FK_') || msg.includes('foreign key');
-}
-
-async function deletePlan(id) {
-  if (!confirm('Удалить план абонемента?')) return;
+async function deletePlan(id, name) {
+  if (!confirm(`Удалить план "${name}"?\n\nБудут также удалены все абонементы клиентов с этим тарифом.`)) return;
+  showLoading(true);
   try {
+    // 1. Находим все абонементы с этим планом и удаляем
+    try {
+      const all = await api.get('/ClientMemberships');
+      const related = all.filter(m => m.membershipPlanId === id);
+      for (const m of related) { try { await api.delete('/ClientMemberships/' + m.id); } catch(e) {} }
+    } catch(e) {}
+    // 2. Удаляем сам план
     await api.delete('/MembershipPlans/' + id);
     loadPlans();
   } catch(e) {
-    if (isConstraintError(e.message)) {
-      showDeleteError('К этому тарифу привязаны абонементы клиентов. Сначала удалите все абонементы с этим тарифом в разделе «Абонементы».');
-    } else {
-      alert('Ошибка: ' + e.message);
+    alert('Не удалось удалить план: ' + e.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function showLoading(on) {
+  let el = document.getElementById('loadingOverlay');
+  if (on) {
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'loadingOverlay';
+      el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999';
+      el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:28px 40px;display:flex;align-items:center;gap:14px;color:var(--text);font-size:14px"><span class="spinner"></span> Удаление...</div>';
+      document.body.appendChild(el);
     }
+  } else {
+    if (el) el.remove();
   }
 }
 </script>

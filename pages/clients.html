@@ -14,27 +14,14 @@ if (!localStorage.getItem('fc_user')) window.location.href = '../login.html';
 renderLayout('Клиенты', 'clients');
 </script>
 
-<!-- Modal -->
 <div class="modal-overlay" id="modal">
   <div class="modal-box">
     <div class="modal-title" id="modalTitle">Добавить клиента</div>
     <input type="hidden" id="mId"/>
-    <div class="form-group">
-      <label class="form-label">ФИО</label>
-      <input type="text" class="form-control" id="mName" placeholder="Иванов Иван Иванович"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Email</label>
-      <input type="email" class="form-control" id="mEmail" placeholder="ivan@mail.ru"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Телефон</label>
-      <input type="text" class="form-control" id="mPhone" placeholder="+7 999 000 00 00"/>
-    </div>
-    <div class="form-group" id="pwdGroup">
-      <label class="form-label">Пароль</label>
-      <input type="password" class="form-control" id="mPassword" placeholder="Минимум 6 символов"/>
-    </div>
+    <div class="form-group"><label class="form-label">ФИО</label><input type="text" class="form-control" id="mName" placeholder="Иванов Иван Иванович"/></div>
+    <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="mEmail" placeholder="ivan@mail.ru"/></div>
+    <div class="form-group"><label class="form-label">Телефон</label><input type="text" class="form-control" id="mPhone" placeholder="+7 999 000 00 00"/></div>
+    <div class="form-group" id="pwdGroup"><label class="form-label">Пароль</label><input type="password" class="form-control" id="mPassword" placeholder="Минимум 6 символов"/></div>
     <div class="modal-footer">
       <button class="btn-outline" onclick="closeModal('modal')">Отмена</button>
       <button class="btn-modal-save" onclick="saveClient()">Сохранить</button>
@@ -43,8 +30,7 @@ renderLayout('Клиенты', 'clients');
 </div>
 
 <script>
-// Admin only
-if (!requireRole([1])) { /* blocked */ } else {
+if (!requireRole([1])) {} else {
   const content = document.getElementById('pageContent');
   content.innerHTML = `
     <div class="page-header">
@@ -60,9 +46,7 @@ if (!requireRole([1])) { /* blocked */ } else {
     <div class="table-card">
       <div class="table-card-head">
         <div class="table-card-title"><span class="title-dot"></span>Список клиентов</div>
-        <div class="table-tools">
-          <input class="search-input" id="search" placeholder="Поиск по имени..." oninput="filterTable()"/>
-        </div>
+        <input class="search-input" id="search" placeholder="Поиск по имени..." oninput="filterTable()"/>
       </div>
       <table class="fc-table">
         <thead><tr><th>#</th><th>ФИО</th><th>Телефон</th><th>Email</th><th>Действия</th></tr></thead>
@@ -81,7 +65,7 @@ async function loadClients() {
     allClients = all.filter(u => u.roleId === 3);
     renderTable(allClients);
   } catch(e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки данных</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red);padding:24px">Ошибка загрузки</td></tr>`;
   }
 }
 
@@ -95,15 +79,15 @@ function renderTable(list) {
   }
   tbody.innerHTML = list.map((c, i) => `
     <tr>
-      <td class="muted">${i + 1}</td>
+      <td class="muted">${i+1}</td>
       <td><strong>${c.fullName}</strong></td>
       <td class="muted">${c.phoneNumber || '—'}</td>
-      <td class="muted">${c.email}</td>
-      <td>
-        <button class="btn-icon" onclick="openEdit(${JSON.stringify(c).replace(/"/g,'&quot;')})" title="Редактировать">
+      <td class="muted">${c.email || '—'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn-icon" onclick='openEdit(${JSON.stringify(c)})' title="Редактировать">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="btn-icon danger" onclick="deleteClient(${c.id})" title="Удалить">
+        <button class="btn-icon danger" onclick="deleteClient(${c.id}, '${c.fullName.replace(/'/g,'')}')" title="Удалить">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
       </td>
@@ -118,11 +102,7 @@ function filterTable() {
 
 function openAdd() {
   document.getElementById('modalTitle').textContent = 'Добавить клиента';
-  document.getElementById('mId').value = '';
-  document.getElementById('mName').value = '';
-  document.getElementById('mEmail').value = '';
-  document.getElementById('mPhone').value = '';
-  document.getElementById('mPassword').value = '';
+  ['mId','mName','mEmail','mPhone','mPassword'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('pwdGroup').style.display = 'block';
   openModal('modal');
 }
@@ -131,7 +111,7 @@ function openEdit(c) {
   document.getElementById('modalTitle').textContent = 'Редактировать клиента';
   document.getElementById('mId').value = c.id;
   document.getElementById('mName').value = c.fullName;
-  document.getElementById('mEmail').value = c.email;
+  document.getElementById('mEmail').value = c.email || '';
   document.getElementById('mPhone').value = c.phoneNumber || '';
   document.getElementById('mPassword').value = '';
   document.getElementById('pwdGroup').style.display = 'none';
@@ -156,10 +136,43 @@ async function saveClient() {
   } catch(e) { alert('Ошибка: ' + e.message); }
 }
 
-async function deleteClient(id) {
-  if (!confirm('Удалить клиента?')) return;
-  try { await api.delete('/Users/' + id); loadClients(); }
-  catch(e) { alert('Ошибка: ' + e.message); }
+async function deleteClient(id, name) {
+  if (!confirm(`Удалить клиента "${name}"?\n\nБудут также удалены все его записи на тренировки и абонементы.`)) return;
+  showLoading(true);
+  try {
+    // 1. Удаляем записи на тренировки
+    try {
+      const regs = await api.get('/WorkoutRegistrations/by-client/' + id);
+      for (const r of regs) { try { await api.delete('/WorkoutRegistrations/' + r.id); } catch(e) {} }
+    } catch(e) {}
+    // 2. Удаляем абонементы
+    try {
+      const memberships = await api.get('/ClientMemberships/by-client/' + id);
+      for (const m of memberships) { try { await api.delete('/ClientMemberships/' + m.id); } catch(e) {} }
+    } catch(e) {}
+    // 3. Удаляем самого пользователя
+    await api.delete('/Users/' + id);
+    loadClients();
+  } catch(e) {
+    alert('Не удалось удалить клиента: ' + e.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function showLoading(on) {
+  let el = document.getElementById('loadingOverlay');
+  if (on) {
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'loadingOverlay';
+      el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999';
+      el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:28px 40px;display:flex;align-items:center;gap:14px;color:var(--text);font-size:14px"><span class="spinner"></span> Удаление...</div>';
+      document.body.appendChild(el);
+    }
+  } else {
+    if (el) el.remove();
+  }
 }
 </script>
 </body>
