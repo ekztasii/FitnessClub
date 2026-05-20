@@ -1,8 +1,5 @@
-version: '3.8'
-
 services:
 
-  # ── База данных MS SQL Server ──────────────────────────────────────────────
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: fitnessclub_db
@@ -21,16 +18,14 @@ services:
       retries: 10
       start_period: 60s
 
-  # ── ASP.NET Web API ────────────────────────────────────────────────────────
   backend:
     build:
-      context: ./FitnessClub/FitnessClub   # папка с .csproj и Dockerfile
+      context: ./FitnessClub/FitnessClub
       dockerfile: Dockerfile
     container_name: fitnessclub_api
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      # Перекрывает appsettings.json — "db" это имя сервиса выше
       ConnectionStrings__DefaultConnection: "Server=db,1433;Database=FitnessClubDb;User Id=sa;Password=Atletika@2026;TrustServerCertificate=True;MultipleActiveResultSets=true"
     ports:
       - "8080:8080"
@@ -39,11 +34,10 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  # ── Frontend (nginx) ───────────────────────────────────────────────────────
   frontend:
     build:
-      context: .                   # корень репо — там лежат css/, js/, pages/, *.html
-      dockerfile: Dockerfile.frontend
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: fitnessclub_frontend
     ports:
       - "3000:80"
