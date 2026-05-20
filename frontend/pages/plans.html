@@ -8,6 +8,7 @@
 </head>
 <body>
 <script src="../js/api.js"></script>
+<script src="../js/validation.js"></script>
 <script src="../js/layout.js"></script>
 <script>
 if (!localStorage.getItem('fc_user')) window.location.href = '../login.html';
@@ -120,7 +121,16 @@ async function savePlan() {
     validityDays: parseInt(document.getElementById('mDays').value),
     allowedVisits: parseInt(document.getElementById('mVisits').value)
   };
-  if (!body.planName || isNaN(body.price)) { alert('Заполните все поля'); return; }
+  const nameEl  = document.getElementById('mName');
+  const priceEl = document.getElementById('mPrice');
+  const daysEl  = document.getElementById('mDays');
+  const visEl   = document.getElementById('mVisits');
+  let ok = true;
+  ok = Validate.check(nameEl,  v => Validate.required(v, 'Название'))       && ok;
+  ok = Validate.check(priceEl, v => Validate.positiveNumber(v, 'Цена'))     && ok;
+  ok = Validate.check(daysEl,  v => Validate.positiveInt(v, 'Дней'))        && ok;
+  ok = Validate.check(visEl,   v => Validate.positiveInt(v, 'Посещений'))   && ok;
+  if (!ok) return;
   try {
     if (id) await api.put('/MembershipPlans/' + id, body);
     else await api.post('/MembershipPlans', body);

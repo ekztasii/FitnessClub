@@ -8,6 +8,7 @@
 </head>
 <body>
 <script src="js/api.js"></script>
+<script src="js/validation.js"></script>
 
 <div class="auth-wrap">
   <div class="auth-box">
@@ -29,15 +30,27 @@
 
     <div class="form-group">
       <label class="form-label">Email</label>
-      <input type="email" class="form-control" id="fEmail" placeholder="your@email.ru" autocomplete="email"/>
+      <input type="email" class="form-control" id="fEmail"
+        placeholder="your@email.ru"
+        autocomplete="email"
+        pattern="[^\s@]+@[^\s@]+\.[^\s@]{2,}"
+        title="Введите корректный email (например: user@mail.ru)"/>
     </div>
 
     <div class="form-group" style="margin-bottom:22px">
       <label class="form-label">Пароль</label>
       <div style="position:relative">
-        <input type="password" class="form-control" id="fPassword" placeholder="••••••••" autocomplete="current-password"/>
-        <button onclick="togglePwd()" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:0;line-height:1;" title="Показать пароль">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <input type="password" class="form-control" id="fPassword"
+          placeholder="••••••••"
+          minlength="6"
+          autocomplete="current-password"/>
+        <button onclick="togglePwd()" type="button"
+          style="position:absolute;top:50%;right:12px;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:0;line-height:1;"
+          title="Показать пароль">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
         </button>
       </div>
     </div>
@@ -45,7 +58,6 @@
     <button class="btn-primary" id="loginBtn" onclick="doLogin()">Войти</button>
 
     <div class="auth-divider">или</div>
-
     <div class="auth-link">
       Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
     </div>
@@ -55,6 +67,12 @@
 <script>
 if (localStorage.getItem('fc_user')) window.location.href = 'index.html';
 
+// Привязываем live-валидацию
+document.addEventListener('DOMContentLoaded', () => {
+  Validate.bindLive(document.getElementById('fEmail'),    v => Validate.email(v));
+  Validate.bindLive(document.getElementById('fPassword'), v => Validate.password(v));
+});
+
 function togglePwd() {
   const f = document.getElementById('fPassword');
   f.type = f.type === 'password' ? 'text' : 'password';
@@ -63,49 +81,50 @@ function togglePwd() {
 document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 async function doLogin() {
-  const email    = document.getElementById('fEmail').value.trim();
-  const password = document.getElementById('fPassword').value;
-  const errEl    = document.getElementById('errAlert');
-  const btn      = document.getElementById('loginBtn');
+  const emailEl = document.getElementById('fEmail');
+  const passEl  = document.getElementById('fPassword');
+  const errEl   = document.getElementById('errAlert');
+  const btn     = document.getElementById('loginBtn');
 
   errEl.classList.add('d-none');
 
-  if (!email || !password) {
-    errEl.textContent = 'Введите email и пароль';
-    errEl.classList.remove('d-none');
-    return;
-  }
+  // Валидация перед отправкой
+  const okEmail = Validate.check(emailEl, v => Validate.email(v));
+  const okPass  = Validate.check(passEl,  v => Validate.password(v));
+  if (!okEmail || !okPass) return;
 
   btn.textContent = 'Вход...';
   btn.disabled = true;
 
   try {
     const users = await api.get('/Users');
-    const user = users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+    const user = users.find(u => u.email && u.email.toLowerCase() === emailEl.value.trim().toLowerCase());
 
-    if (!user) throw new Error('Пользователь с таким email не найден');
+    if (!user) {
+      Validate.showError(emailEl, 'Пользователь с таким email не найден');
+      throw new Error('');
+    }
 
-    // Проверка пароля через SHA-256
-    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(passEl.value));
     const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
 
     if (user.passwordHash && user.passwordHash.toLowerCase() !== hashHex.toLowerCase()) {
-      throw new Error('Неверный пароль');
+      Validate.showError(passEl, 'Неверный пароль');
+      throw new Error('');
     }
 
     localStorage.setItem('fc_user', JSON.stringify({
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      roleId: user.roleId,
-      roleName: user.roleName
+      id: user.id, fullName: user.fullName,
+      email: user.email, roleId: user.roleId, roleName: user.roleName
     }));
 
     window.location.href = 'index.html';
 
   } catch(e) {
-    errEl.textContent = e.message || 'Ошибка входа. Проверьте данные.';
-    errEl.classList.remove('d-none');
+    if (e.message) {
+      errEl.textContent = 'Ошибка входа. Проверьте данные.';
+      errEl.classList.remove('d-none');
+    }
     btn.textContent = 'Войти';
     btn.disabled = false;
   }

@@ -8,6 +8,7 @@
 </head>
 <body>
 <script src="../js/api.js"></script>
+<script src="../js/validation.js"></script>
 <script src="../js/layout.js"></script>
 <script>
 if (!localStorage.getItem('fc_user')) window.location.href = '../login.html';
@@ -125,7 +126,16 @@ async function saveAdmin() {
     phoneNumber: document.getElementById('mPhone').value.trim() || null,
     password: document.getElementById('mPassword').value || 'admin123'
   };
-  if (!body.fullName || !body.email) { alert('Заполните ФИО и Email'); return; }
+  const nameEl = document.getElementById('mName');
+  const emailEl = document.getElementById('mEmail');
+  const phoneEl = document.getElementById('mPhone');
+  const passEl  = document.getElementById('mPassword');
+  let ok = true;
+  ok = Validate.check(nameEl,  v => Validate.fullName(v)) && ok;
+  ok = Validate.check(emailEl, v => Validate.email(v))    && ok;
+  ok = Validate.check(phoneEl, v => Validate.phone(v))    && ok;
+  if (!id) ok = Validate.check(passEl, v => Validate.password(v)) && ok;
+  if (!ok) return;
   try {
     if (id) await api.put('/Users/' + id, body);
     else await api.post('/Users', body);

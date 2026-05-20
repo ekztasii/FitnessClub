@@ -1,14 +1,6 @@
 FROM nginx:alpine
-
-# Удаляем дефолтную страницу nginx
 RUN rm -rf /usr/share/nginx/html/*
-
-# Копируем весь frontend (корень репо: css, js, pages, *.html)
 COPY . /usr/share/nginx/html
-
-# Конфиг nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]

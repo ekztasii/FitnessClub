@@ -1,10 +1,14 @@
+# Build outputs
+**/bin/
+**/obj/
+**/.vs/
+
 # OS
 .DS_Store
 Thumbs.db
 
-# Editor
-.vscode/
-*.swp
-
 # Logs
 *.log
+
+# Env
+.env

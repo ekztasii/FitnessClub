@@ -8,6 +8,7 @@
 </head>
 <body>
 <script src="../js/api.js"></script>
+<script src="../js/validation.js"></script>
 <script src="../js/layout.js"></script>
 <script>
 if (!localStorage.getItem('fc_user')) window.location.href = '../login.html';
@@ -180,7 +181,12 @@ async function saveWorkout() {
     workoutDate: document.getElementById('mDate').value,
     maxParticipants: parseInt(document.getElementById('mMax').value)
   };
-  if (!body.workoutDate) { alert('Укажите дату'); return; }
+  const dateEl = document.getElementById('mDate');
+  const maxEl  = document.getElementById('mMax');
+  let ok = true;
+  ok = Validate.check(dateEl, v => Validate.date(v, 'Дата тренировки'))         && ok;
+  ok = Validate.check(maxEl,  v => Validate.positiveInt(v, 'Макс. участников')) && ok;
+  if (!ok) return;
   try {
     if (id) await api.put('/Workouts/' + id, body);
     else await api.post('/Workouts', body);

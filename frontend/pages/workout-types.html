@@ -8,6 +8,7 @@
 </head>
 <body>
 <script src="../js/api.js"></script>
+<script src="../js/validation.js"></script>
 <script src="../js/layout.js"></script>
 <script>
 if (!localStorage.getItem('fc_user')) window.location.href = '../login.html';
@@ -153,7 +154,9 @@ async function saveType() {
     typeName: document.getElementById('mTypeName').value.trim(),
     description: document.getElementById('mDesc').value.trim()
   };
-  if (!body.typeName) { alert('Введите название'); return; }
+  const typeNameEl = document.getElementById('mTypeName');
+  let ok = Validate.check(typeNameEl, v => Validate.required(v, 'Название'));
+  if (!ok) return;
   try {
     if (id) await api.put('/WorkoutTypes/' + id, body);
     else await api.post('/WorkoutTypes', body);

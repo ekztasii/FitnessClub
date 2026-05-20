@@ -8,6 +8,7 @@
 </head>
 <body>
 <script src="js/api.js"></script>
+<script src="js/validation.js"></script>
 
 <div class="auth-wrap">
   <div class="auth-box auth-box-wide">
@@ -28,11 +29,9 @@
     <div id="errAlert"  class="alert alert-error   d-none"></div>
     <div id="succAlert" class="alert alert-success d-none"></div>
 
-    <!-- Тип аккаунта -->
     <div class="form-group">
       <label class="form-label">Тип аккаунта</label>
       <div class="role-options">
-
         <div class="role-opt active" id="opt3" onclick="selectRole(3)">
           <div class="role-opt-icon client">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -42,7 +41,6 @@
             <div class="role-opt-desc">Запись на тренировки, просмотр абонемента</div>
           </div>
         </div>
-
         <div class="role-opt" id="opt2" onclick="selectRole(2)">
           <div class="role-opt-icon trainer">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21a9 9 0 0 1 18 0"/></svg>
@@ -52,7 +50,6 @@
             <div class="role-opt-desc">Просмотр расписания и управление тренировками</div>
           </div>
         </div>
-
         <div class="role-opt" id="opt1" onclick="selectRole(1)">
           <div class="role-opt-icon admin">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -62,105 +59,125 @@
             <div class="role-opt-desc">Полный доступ к системе управления</div>
           </div>
         </div>
-
       </div>
     </div>
 
-    <!-- Код сотрудника (скрыт по умолчанию) -->
     <div class="staff-code-wrap" id="staffCodeWrap">
       <div class="form-group">
         <label class="form-label">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:4px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Код сотрудника
         </label>
-        <input type="password" class="form-control" id="fStaffCode" placeholder="Введите секретный код"/>
+        <input type="password" class="form-control" id="fStaffCode"
+          placeholder="Введите секретный код"/>
         <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">
           Для регистрации как тренер или администратор необходим специальный код. Получите его у руководства клуба.
         </div>
       </div>
     </div>
 
-    <!-- Данные -->
     <div class="form-group">
       <label class="form-label">ФИО</label>
-      <input type="text" class="form-control" id="fFullName" placeholder="Иванов Иван Иванович"/>
+      <input type="text" class="form-control" id="fFullName"
+        placeholder="Иванов Иван Иванович"
+        minlength="3"
+        title="Введите имя и фамилию"/>
     </div>
 
     <div class="form-row" style="margin-bottom:16px">
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Телефон</label>
-        <input type="text" class="form-control" id="fPhone" placeholder="+7 999 000 00 00"/>
+        <input type="tel" class="form-control" id="fPhone"
+          placeholder="+7 999 000 00 00"
+          pattern="[\+\d\s\-\(\)]{10,16}"
+          title="Введите корректный номер телефона"/>
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Email</label>
-        <input type="email" class="form-control" id="fEmail" placeholder="ivan@mail.ru"/>
+        <input type="email" class="form-control" id="fEmail"
+          placeholder="ivan@mail.ru"
+          pattern="[^\s@]+@[^\s@]+\.[^\s@]{2,}"
+          title="Введите корректный email (например: user@mail.ru)"/>
       </div>
     </div>
 
     <div class="form-row" style="margin-bottom:22px">
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Пароль</label>
-        <input type="password" class="form-control" id="fPassword" placeholder="Минимум 6 символов"/>
+        <input type="password" class="form-control" id="fPassword"
+          placeholder="Минимум 6 символов"
+          minlength="6"
+          title="Минимум 6 символов"/>
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Повторите пароль</label>
-        <input type="password" class="form-control" id="fPassword2" placeholder="••••••••"/>
+        <input type="password" class="form-control" id="fPassword2"
+          placeholder="••••••••"/>
       </div>
     </div>
 
     <button class="btn-primary" id="regBtn" onclick="doRegister()">Зарегистрироваться</button>
-
-    <div class="auth-link">
-      Уже есть аккаунт? <a href="login.html">Войти</a>
-    </div>
+    <div class="auth-link">Уже есть аккаунт? <a href="login.html">Войти</a></div>
   </div>
 </div>
 
 <script>
-// СЕКРЕТНЫЙ КОД СОТРУДНИКОВ — поменяй на свой!
 const STAFF_CODE = 'atletika2026';
-
 let selectedRole = 3;
+
+document.addEventListener('DOMContentLoaded', () => {
+  Validate.bindLive(document.getElementById('fFullName'), v => Validate.fullName(v));
+  Validate.bindLive(document.getElementById('fEmail'),    v => Validate.email(v));
+  Validate.bindLive(document.getElementById('fPhone'),    v => Validate.phone(v));
+  Validate.bindLive(document.getElementById('fPassword'), v => Validate.password(v));
+  Validate.bindLive(document.getElementById('fPassword2'),v => {
+    const p1 = document.getElementById('fPassword').value;
+    return Validate.passwordMatch(v, p1);
+  });
+});
 
 function selectRole(roleId) {
   selectedRole = roleId;
   document.querySelectorAll('.role-opt').forEach(el => el.classList.remove('active'));
   document.getElementById('opt' + roleId).classList.add('active');
-
-  // Показываем поле кода только для тренера и администратора
   const wrap = document.getElementById('staffCodeWrap');
-  if (roleId === 1 || roleId === 2) {
-    wrap.classList.add('show');
-  } else {
-    wrap.classList.remove('show');
-    document.getElementById('fStaffCode').value = '';
-  }
+  if (roleId === 1 || roleId === 2) wrap.classList.add('show');
+  else { wrap.classList.remove('show'); document.getElementById('fStaffCode').value = ''; }
 }
 
 async function doRegister() {
   const errEl  = document.getElementById('errAlert');
   const succEl = document.getElementById('succAlert');
   const btn    = document.getElementById('regBtn');
-
   errEl.classList.add('d-none');
   succEl.classList.add('d-none');
 
-  const fullName  = document.getElementById('fFullName').value.trim();
-  const email     = document.getElementById('fEmail').value.trim();
-  const phone     = document.getElementById('fPhone').value.trim();
-  const password  = document.getElementById('fPassword').value;
-  const password2 = document.getElementById('fPassword2').value;
-  const staffCode = document.getElementById('fStaffCode').value.trim();
+  const nameEl  = document.getElementById('fFullName');
+  const emailEl = document.getElementById('fEmail');
+  const phoneEl = document.getElementById('fPhone');
+  const passEl  = document.getElementById('fPassword');
+  const pass2El = document.getElementById('fPassword2');
+  const codeEl  = document.getElementById('fStaffCode');
 
-  if (!fullName)    { showErr('Введите ФИО'); return; }
-  if (!email)       { showErr('Введите email'); return; }
-  if (!password)    { showErr('Введите пароль'); return; }
-  if (password.length < 6) { showErr('Пароль должен быть не менее 6 символов'); return; }
-  if (password !== password2) { showErr('Пароли не совпадают'); return; }
+  // Валидация всех полей
+  let ok = true;
+  ok = Validate.check(nameEl,  v => Validate.fullName(v))    && ok;
+  ok = Validate.check(emailEl, v => Validate.email(v))       && ok;
+  ok = Validate.check(phoneEl, v => Validate.phone(v))       && ok;
+  ok = Validate.check(passEl,  v => Validate.password(v))    && ok;
+  ok = Validate.check(pass2El, v => Validate.passwordMatch(v, passEl.value)) && ok;
+
+  if (!ok) {
+    errEl.textContent = 'Исправьте ошибки в форме';
+    errEl.classList.remove('d-none');
+    return;
+  }
 
   // Проверка кода сотрудника
-  if ((selectedRole === 1 || selectedRole === 2) && staffCode !== STAFF_CODE) {
-    showErr('Неверный код сотрудника. Обратитесь к администрации клуба.');
+  if ((selectedRole === 1 || selectedRole === 2) && codeEl.value.trim() !== STAFF_CODE) {
+    Validate.showError(codeEl, 'Неверный код сотрудника. Обратитесь к администрации.');
+    errEl.textContent = 'Неверный код сотрудника.';
+    errEl.classList.remove('d-none');
     return;
   }
 
@@ -170,36 +187,28 @@ async function doRegister() {
   try {
     const user = await api.post('/Users', {
       roleId: selectedRole,
-      fullName,
-      email,
-      phoneNumber: phone || null,
-      password
+      fullName: nameEl.value.trim(),
+      email: emailEl.value.trim(),
+      phoneNumber: phoneEl.value.trim() || null,
+      password: passEl.value
     });
 
     succEl.textContent = 'Аккаунт успешно создан. Перенаправление...';
     succEl.classList.remove('d-none');
 
     localStorage.setItem('fc_user', JSON.stringify({
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      roleId: user.roleId,
-      roleName: user.roleName
+      id: user.id, fullName: user.fullName,
+      email: user.email, roleId: user.roleId, roleName: user.roleName
     }));
 
     setTimeout(() => window.location.href = 'index.html', 1200);
 
   } catch(e) {
-    showErr('Ошибка регистрации. Возможно, такой email уже занят.');
+    errEl.textContent = 'Ошибка регистрации. Возможно, такой email уже занят.';
+    errEl.classList.remove('d-none');
     btn.textContent = 'Зарегистрироваться';
     btn.disabled = false;
   }
-}
-
-function showErr(msg) {
-  const el = document.getElementById('errAlert');
-  el.textContent = msg;
-  el.classList.remove('d-none');
 }
 </script>
 </body>
